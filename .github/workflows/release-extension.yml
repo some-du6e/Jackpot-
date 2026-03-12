@@ -1,0 +1,129 @@
+name: Release Extension
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Read release metadata
+        id: metadata
+        shell: pwsh
+        run: |
+          $manifest = Get-Content manifest.json | ConvertFrom-Json
+          $version = $manifest.version
+          $shortSha = $env:GITHUB_SHA.Substring(0, 7)
+          $tag = "v$version-$shortSha"
+          $name = "Jackpot+ v$version ($shortSha)"
+
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "version=$version"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "short_sha=$shortSha"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "tag=$tag"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "name=$name"
+
+      - name: Build zip package
+        shell: pwsh
+        run: |
+          if (Test-Path dist) { Remove-Item -Recurse -Force dist }
+          if (Test-Path jackpot.zip) { Remove-Item -Force jackpot.zip }
+
+          New-Item -ItemType Directory -Path dist | Out-Null
+
+          $include = @('manifest.json', 'icons')
+          Get-ChildItem -File -Filter '*.js' | ForEach-Object { $include += $_.Name }
+
+          foreach ($item in $include) {
+            if (Test-Path $item) {
+              Copy-Item $item -Destination dist -Recurse -Force
+            }
+          }
+
+          Compress-Archive -Path dist\* -DestinationPath jackpot.zip
+          Write-Host "Done. jackpot.zip is ready to upload."
+
+      - name: Restore signing key
+        id: signing-key
+        shell: pwsh
+        env:
+          CHROME_EXTENSION_PEM_BASE64: ${{ secrets.CHROME_EXTENSION_PEM_BASE64 }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:CHROME_EXTENSION_PEM_BASE64)) {
+            Write-Host "No CHROME_EXTENSION_PEM_BASE64 secret found — skipping .crx build."
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "has_key=false"
+          } else {
+            $pemPath = Join-Path $env:RUNNER_TEMP 'jackpot.pem'
+            [System.IO.File]::WriteAllBytes($pemPath, [Convert]::FromBase64String($env:CHROME_EXTENSION_PEM_BASE64))
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "pem_path=$pemPath"
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "has_key=true"
+          }
+
+      - name: Install crx3 packer
+        if: steps.signing-key.outputs.has_key == 'true'
+        shell: pwsh
+        run: npm install --global crx3@2.0.0
+
+      - name: Build crx package
+        if: steps.signing-key.outputs.has_key == 'true'
+        shell: pwsh
+        run: |
+          $extensionPath = Join-Path $PWD 'dist'
+          $releaseCrx = Join-Path $PWD 'jackpot.crx'
+
+          crx3 --crxPath $releaseCrx --keyPath "${{ steps.signing-key.outputs.pem_path }}" $extensionPath
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "crx3 failed to package the extension."
+          }
+
+          if (!(Test-Path $releaseCrx)) {
+            throw "Expected packaged extension at $releaseCrx, but it was not created."
+          }
+
+      - name: Publish GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ steps.metadata.outputs.tag }}"
+          $name = "${{ steps.metadata.outputs.name }}"
+          $hasCrx = Test-Path 'jackpot.crx'
+
+          $assetList = if ($hasCrx) { "- jackpot.zip`n          - jackpot.crx" } else { "- jackpot.zip" }
+          $notes = @"
+          Automated release for commit $env:GITHUB_SHA.
+
+          Assets:
+          $assetList
+          "@
+
+          $assets = @('jackpot.zip')
+          if ($hasCrx) { $assets += 'jackpot.crx' }
+
+          gh release view $tag *> $null
+
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag @assets --clobber
+          }
+          else {
+            gh release create $tag @assets --title $name --notes $notes --target $env:GITHUB_SHA
+          }

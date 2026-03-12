@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Jackpot+",
+  "description": "Removes the \"gambling\" theme from jackpot and overall makes the ux better",
+  "version": "1.0.0",
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://jackpot.hackclub.com/deck*"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": ["storage"]
+}
