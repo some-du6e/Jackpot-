@@ -10,6 +10,85 @@ function getCurrentPageType() {
   return null
 }
 
+// Persist stats to localStorage so they survive page navigations
+const JP_STATS_KEY = "jackpot_plus_stats"
+
+function loadStats() {
+  try {
+    const raw = localStorage.getItem(JP_STATS_KEY)
+    return raw ? JSON.parse(raw) : { chips: "0.0", hours: "0.0" }
+  } catch {
+    return { chips: "0.0", hours: "0.0" }
+  }
+}
+
+function saveStats(chips, hours) {
+  try {
+    localStorage.setItem(JP_STATS_KEY, JSON.stringify({ chips, hours }))
+  } catch {}
+}
+
+// Enhance toolbar with chips and hours counters
+function enhanceToolbar(retryCount = 0) {
+  const toolbarRight = document.querySelector(".toolbar-right")
+  const tokenCount = document.querySelector(".token-count")
+  
+  if (!toolbarRight) {
+    if (retryCount < 10) {
+      setTimeout(() => enhanceToolbar(retryCount + 1), 200)
+    }
+    return
+  }
+  
+  // Check if already enhanced
+  if (document.querySelector(".jp-toolbar-stats")) return
+  
+  // Load cached stats first (shows immediately even if DOM not ready)
+  const cached = loadStats()
+  
+  // Try to get fresh values from DOM
+  let chipsValue = cached.chips
+  let totalHours = parseFloat(cached.hours)
+  
+  if (tokenCount) {
+    chipsValue = tokenCount.textContent.trim()
+  }
+  
+  const cards = document.querySelectorAll(".card-slot-filled")
+  if (cards.length > 0) {
+    totalHours = 0
+    cards.forEach(card => {
+      const hours = parseFloat(card.dataset.projectHours || "0")
+      totalHours += hours
+    })
+  }
+  
+  const hoursStr = totalHours.toFixed(1)
+  
+  // Save fresh values
+  saveStats(chipsValue, hoursStr)
+  
+  // Create the stats container
+  const statsContainer = document.createElement("div")
+  statsContainer.className = "jp-toolbar-stats"
+  statsContainer.innerHTML = `
+    <span class="jp-stat jp-chips-stat">
+      <span class="jp-stat-emoji">🎰</span>
+      <span class="jp-stat-value">${chipsValue}</span>
+    </span>
+    <span class="jp-stat jp-hours-stat">
+      <span class="jp-stat-emoji">⏱️</span>
+      <span class="jp-stat-value">${hoursStr}h</span>
+    </span>
+  `
+  
+  // Hide original token count and insert our stats
+  if (tokenCount) tokenCount.style.display = "none"
+  toolbarRight.insertBefore(statsContainer, toolbarRight.firstChild)
+  
+  console.log("Jackpot+: toolbar enhanced with stats", { chips: chipsValue, hours: hoursStr })
+}
+
 // Inject CSS directly
 function injectStyles() {
   const style = document.createElement("style")
@@ -26,6 +105,191 @@ function injectStyles() {
       background-image: none !important;
       background: #f8fafc !important;
     }
+    
+    /* Toolbar polish */
+    .toolbar {
+      backdrop-filter: blur(12px) saturate(1.2);
+      -webkit-backdrop-filter: blur(12px) saturate(1.2);
+      background: rgba(255, 255, 255, 0.85) !important;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      transition: box-shadow 0.3s ease;
+    }
+    
+    .toolbar:hover {
+      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+    }
+    
+    .toolbar-content {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    /* Nav items polish */
+    .nav-item {
+      transition: 
+        color 0.2s ease,
+        transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+      border-radius: 8px;
+      padding: 6px 12px;
+    }
+    
+    .nav-item:hover {
+      transform: translateY(-1px);
+    }
+    
+    .nav-active {
+      position: relative;
+    }
+    
+    .nav-active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 3px;
+      background: linear-gradient(90deg, #f59e0b, #fbbf24);
+      border-radius: 2px;
+      animation: jp-nav-indicator 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    
+    @keyframes jp-nav-indicator {
+      from { width: 0; opacity: 0; }
+      to { width: 20px; opacity: 1; }
+    }
+    
+    /* Avatar chip polish */
+    .avatar-chip {
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    
+    .avatar-chip-btn:hover .avatar-chip {
+      transform: scale(1.08);
+    }
+    
+    .avatar-chip-btn:active .avatar-chip {
+      transform: scale(0.95);
+    }
+    
+    /* Toolbar stats styling */
+    .jp-toolbar-stats {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-right: 12px;
+      animation: jp-stats-slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    
+    @keyframes jp-stats-slide-in {
+      from {
+        opacity: 0;
+        transform: translateX(-12px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+    }
+    
+    .jp-stat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 7px 14px;
+      border-radius: 24px;
+      cursor: default;
+      transition: 
+        transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 0.2s ease;
+      user-select: none;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .jp-stat::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      background: radial-gradient(circle at center, rgba(255,255,255,0.4) 0%, transparent 70%);
+    }
+    
+    .jp-stat:hover {
+      transform: translateY(-2px) scale(1.04);
+    }
+    
+    .jp-stat:hover::before {
+      opacity: 1;
+    }
+    
+    .jp-stat:active {
+      transform: translateY(0) scale(0.97);
+      transition-duration: 0.1s;
+    }
+    
+    .jp-stat-emoji {
+      font-size: 15px;
+      display: inline-block;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    
+    .jp-stat:hover .jp-stat-emoji {
+      transform: scale(1.2) rotate(-8deg);
+    }
+    
+    .jp-stat-value {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.01em;
+    }
+    
+    .jp-chips-stat {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%);
+      color: #92400e;
+      box-shadow: 
+        0 1px 3px rgba(251, 191, 36, 0.3),
+        0 0 0 1px rgba(251, 191, 36, 0.1) inset;
+    }
+    
+    .jp-chips-stat:hover {
+      box-shadow: 
+        0 4px 12px rgba(251, 191, 36, 0.4),
+        0 0 0 1px rgba(251, 191, 36, 0.2) inset;
+    }
+    
+    .jp-hours-stat {
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 50%, #93c5fd 100%);
+      color: #1e40af;
+      box-shadow: 
+        0 1px 3px rgba(59, 130, 246, 0.2),
+        0 0 0 1px rgba(59, 130, 246, 0.1) inset;
+      animation-delay: 0.08s;
+    }
+    
+    .jp-hours-stat:hover {
+      box-shadow: 
+        0 4px 12px rgba(59, 130, 246, 0.3),
+        0 0 0 1px rgba(59, 130, 246, 0.2) inset;
+    }
+    
+    /* Stagger the entrance */
+    .jp-stat:nth-child(1) { animation: jp-stat-pop 0.4s 0.1s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+    .jp-stat:nth-child(2) { animation: jp-stat-pop 0.4s 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+    
+    @keyframes jp-stat-pop {
+      from {
+        opacity: 0;
+        transform: scale(0.8) translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
   `
   document.head.appendChild(style)
 
@@ -37,10 +301,10 @@ function injectShopIcons() {
   const iconMap = {
     "Add Prize": "add-prize.svg",
     "Shop Rules": "shop-rules.svg",
-    Buy: "buy.svg",
-    Generic: "generic.svg",
-    Setup: "setup.svg",
-    Hardware: "hardware.svg",
+    "Buy": "buy.svg",
+    "Generic": "generic.svg",
+    "Setup": "setup.svg",
+    "Hardware": "hardware.svg",
     "Las Vegas": "las-vegas.svg",
   }
 
@@ -152,19 +416,17 @@ function transformShop(retryCount = 0) {
     btn.addEventListener("click", () => {
       // Toggle active state
       const wasActive = btn.classList.contains("jp-shop-filter-active")
-      filterBar
-        .querySelectorAll(".jp-shop-filter-btn")
-        .forEach(b => b.classList.remove("jp-shop-filter-active"))
-
+      filterBar.querySelectorAll(".jp-shop-filter-btn").forEach(b => b.classList.remove("jp-shop-filter-active"))
+      
       const items = container.querySelectorAll(".jp-shop-item")
       if (wasActive) {
         // Was active, now deactivate — show all
-        items.forEach(item => (item.style.display = ""))
+        items.forEach(item => item.style.display = "")
       } else {
         // Activate this filter
         btn.classList.add("jp-shop-filter-active")
         items.forEach(item => {
-          item.style.display = cat === "all" || item.dataset.category === cat ? "" : "none"
+          item.style.display = (cat === "all" || item.dataset.category === cat) ? "" : "none"
         })
       }
     })
@@ -214,16 +476,8 @@ function transformShop(retryCount = 0) {
 
     const hoursAmount = (item.price / 50).toFixed(1)
     const priceHtml = item.dollarAmount
-      ? item.price.toLocaleString() +
-        ' chips <span class="jp-shop-item-dollar">(' +
-        item.dollarAmount +
-        " / " +
-        hoursAmount +
-        "h)</span>"
-      : item.price.toLocaleString() +
-        ' chips <span class="jp-shop-item-dollar">(' +
-        hoursAmount +
-        "h)</span>"
+      ? item.price.toLocaleString() + ' chips <span class="jp-shop-item-dollar">(' + item.dollarAmount + ' / ' + hoursAmount + 'h)</span>'
+      : item.price.toLocaleString() + ' chips <span class="jp-shop-item-dollar">(' + hoursAmount + 'h)</span>'
 
     el.innerHTML = `
       <div class="jp-shop-item-card">
@@ -485,6 +739,12 @@ function transformDeck(retryCount = 0) {
   // Replace the deck table with the simple list
   deckTable.parentNode.replaceChild(listContainer, deckTable)
 
+  // Save stats to localStorage so toolbar shows correct values on other pages
+  const tokenCountEl = document.querySelector(".token-count")
+  const chipsVal = tokenCountEl ? tokenCountEl.textContent.trim() : loadStats().chips
+  const totalHrs = cards.reduce((sum, card) => sum + parseFloat(card.dataset.projectHours || "0"), 0)
+  saveStats(chipsVal, totalHrs.toFixed(1))
+
   console.log("Jackpot+: deck transformed successfully")
 }
 
@@ -497,11 +757,16 @@ function initPage() {
   // Remove any previous JP transformations so they can be re-applied
   document.querySelectorAll(".jp-shop-container").forEach(el => el.remove())
   document.querySelectorAll(".jackpot-simple-list").forEach(el => el.remove())
-
+  document.querySelectorAll(".jp-toolbar-stats").forEach(el => el.remove())
+  
   // Restore hidden originals (they get hidden via CSS, but let's be safe)
   document.querySelectorAll(".deck-table, .shop-right > *:not(.jp-shop-container)").forEach(el => {
     el.style.display = ""
   })
+  
+  // Restore original token count
+  const tokenCount = document.querySelector(".token-count")
+  if (tokenCount) tokenCount.style.display = ""
 
   if (document.body.classList.contains("shop-body")) {
     transformShop()
@@ -524,6 +789,7 @@ function initPage() {
     setTimeout(() => transformDeck(), 300)
   }
   injectShopIcons()
+  enhanceToolbar()
 }
 
 // Run on initial load
@@ -551,13 +817,13 @@ window.addEventListener("popstate", () => {
 })
 
 // Watch for body class changes (page type switches)
-const bodyClassObserver = new MutationObserver(mutations => {
+const bodyClassObserver = new MutationObserver((mutations) => {
   for (const mutation of mutations) {
     if (mutation.attributeName === "class") {
       const body = document.body
       const hasShopTransform = document.querySelector(".jp-shop-container")
       const hasDeckTransform = document.querySelector(".jackpot-simple-list")
-
+      
       // If body class changed and our transform is missing or wrong, re-init
       if (body.classList.contains("shop-body") && !hasShopTransform) {
         console.log("Jackpot+: shop-body detected without transform, re-initializing")
@@ -576,11 +842,10 @@ const bodyClassObserver = new MutationObserver(mutations => {
 bodyClassObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] })
 
 // Watch for deck-table appearing in DOM (faster than polling)
-const deckTableObserver = new MutationObserver(mutations => {
+const deckTableObserver = new MutationObserver((mutations) => {
   for (const mutation of mutations) {
     for (const node of mutation.addedNodes) {
-      if (node.nodeType === 1) {
-        // Element node
+      if (node.nodeType === 1) { // Element node
         if (node.classList?.contains("deck-table") || node.querySelector?.(".deck-table")) {
           console.log("Jackpot+: deck-table appeared in DOM, transforming")
           setTimeout(() => transformDeck(), 100)
