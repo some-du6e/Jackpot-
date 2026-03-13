@@ -8,10 +8,16 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://jackpot.hackclub.com/deck*"],
+      "matches": ["https://jackpot.hackclub.com/*"],
       "js": ["content.js"],
       "css": ["styles.css"],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*.svg"],
+      "matches": ["https://jackpot.hackclub.com/*"]
     }
   ],
   "permissions": ["storage"]

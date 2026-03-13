@@ -1,22 +1,374 @@
+/* Hide original shop elements permanently */
+.shop-category-selector,
+.shop-category-view,
+.shop-top-bar,
+.shop-left {
+  display: none !important;
+}
+
+/* Make sure our container is visible and styled */
+.shop-right {
+  background: #f8fafc !important;
+  padding: 24px !important;
+}
+
+.shop-page {
+  background: #f8fafc !important;
+}
+
+/* ──────────────────────────────────────────────
+   SHOP TRANSFORMED VIEW
+────────────────────────────────────────────── */
+.jp-shop-container {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 24px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Filter bar */
+.jp-shop-filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.jp-shop-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 
+    all 200ms var(--jp-ease-out-quart);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.jp-shop-filter-btn:hover {
+  border-color: #94a3b8;
+  color: #0f172a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.jp-shop-filter-active {
+  background: #0f172a;
+  color: #fff;
+  border-color: #0f172a;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+}
+
+.jp-shop-filter-active:hover {
+  background: #1e293b;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+}
+
+.jp-shop-filter-btn .jp-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 0;
+  opacity: 1;
+}
+
+.jp-shop-filter-active .jp-icon {
+  filter: invert(1);
+}
+
+/* Sort controls */
+.jp-shop-sort {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.jp-shop-sort-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.jp-shop-sort-select {
+  padding: 8px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 180ms ease;
+  font-family: inherit;
+}
+
+.jp-shop-sort-select:hover,
+.jp-shop-sort-select:focus {
+  border-color: #94a3b8;
+}
+
+.jp-shop-sort-dir {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+
+.jp-shop-sort-dir:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+/* Items grid */
+.jp-shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+/* Individual item */
+.jp-shop-item {
+  opacity: 0;
+  transform: translateY(16px) scale(0.98);
+  animation: jpFadeLiftIn 500ms var(--jp-ease-out-expo) forwards;
+  animation-delay: calc(80ms + (var(--item-index, 0) * 50ms));
+}
+
+/* Item card */
+.jp-shop-item-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  transition: 
+    border-color 220ms var(--jp-ease-out-quart),
+    box-shadow 220ms var(--jp-ease-out-quart),
+    transform 220ms var(--jp-ease-out-quart);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.jp-shop-item-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+  transform: translateY(-3px);
+}
+
+/* Item image */
+.jp-shop-item-image {
+  width: 100%;
+  height: 160px;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #f8fafc;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 220ms ease;
+}
+
+.jp-shop-item-card:hover .jp-shop-item-image {
+  background-color: #f1f5f9;
+}
+
+/* Item content */
+.jp-shop-item-content {
+  padding: 16px;
+}
+
+/* Category badge */
+.jp-shop-item-category {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.jp-cat-generic {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.jp-cat-setup {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.jp-cat-hardware {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.jp-cat-las_vegas {
+  background: #fce7f3;
+  color: #be185d;
+}
+
+/* Item name */
+.jp-shop-item-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 14px 0;
+  line-height: 1.35;
+  letter-spacing: -0.2px;
+}
+
+/* Item footer */
+.jp-shop-item-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* Price */
+.jp-shop-item-price {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: -0.1px;
+}
+
+.jp-shop-item-dollar {
+  color: #16a34a;
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+/* Buy button */
+.jp-shop-buy-btn {
+  padding: 8px 18px;
+  border: none;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 
+    background 200ms var(--jp-ease-out-quart),
+    transform 200ms var(--jp-ease-out-quart),
+    box-shadow 200ms var(--jp-ease-out-quart);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.jp-shop-buy-btn:hover {
+  background: #1e293b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+}
+
+.jp-shop-buy-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
 /* Modern, polished styles for Jackpot+ */
+
+/* Shop icons */
+.jp-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  vertical-align: middle;
+  filter: invert(0);
+  opacity: 0.85;
+}
+
+:root {
+  --jp-ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --jp-ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --jp-ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes jpFadeLiftIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes jpTitleIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes jpBadgeGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(22, 163, 74, 0);
+  }
+
+  50% {
+    box-shadow: 0 0 0 7px rgba(22, 163, 74, 0.08);
+  }
+}
 
 /* Base page styling */
 .deck-body {
   background: none !important;
   background-color: #f8fafc !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
 }
 
 .deck-page {
   background: none !important;
   background-color: #f8fafc !important;
+  position: relative !important;
+  inset: auto !important;
+  overflow: visible !important;
 }
 
 /* Main container */
 .jackpot-simple-list {
-  max-width: 900px;
+  width: 100%;
+  max-width: 1120px;
   margin: 0 auto;
   padding: 40px 24px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  box-sizing: border-box;
+  animation: jpFadeLiftIn 520ms var(--jp-ease-out-expo) both;
+}
+
+.deck-page > .jackpot-simple-list {
+  position: relative !important;
+  z-index: 2 !important;
 }
 
 /* Header */
@@ -26,40 +378,64 @@
   margin: 0 0 32px 0;
   color: #0f172a;
   letter-spacing: -0.5px;
+  animation: jpTitleIn 480ms var(--jp-ease-out-quint) both;
 }
 
 /* Project list grid */
-.project-list {
+.jackpot-simple-list .project-list {
   list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)) !important;
+  gap: 20px !important;
+  max-height: none !important;
+  overflow: visible !important;
+  background: transparent !important;
 }
 
 /* Individual project item */
-.project-item {
-  padding: 0;
-  border-bottom: none;
+.jackpot-simple-list .project-item {
+  padding: 0 !important;
+  border-bottom: none !important;
+  background: transparent !important;
+  display: block !important;
+  width: auto !important;
+  justify-content: unset !important;
+  align-items: unset !important;
+  opacity: 0;
+  transform: translateY(16px);
+  animation: jpFadeLiftIn 520ms var(--jp-ease-out-quint) forwards;
+  animation-delay: calc(90ms + (var(--item-index, 0) * 85ms));
 }
 
 /* Project card */
-.project-card {
+.jackpot-simple-list .project-card {
   background: #ffffff;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.04);
+  transition:
+    transform 260ms var(--jp-ease-out-quart),
+    box-shadow 260ms var(--jp-ease-out-quart),
+    border-color 220ms var(--jp-ease-out-quart);
   border: 1px solid #e2e8f0;
+  transform-origin: center 70%;
 }
 
-.project-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+.jackpot-simple-list .project-card:hover {
+  transform: translateY(-5px) scale(1.01);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+  border-color: #cbd5e1;
 }
 
-.project-shipped {
+.jackpot-simple-list .project-card:active {
+  transform: translateY(-1px) scale(0.996);
+}
+
+.jackpot-simple-list .project-shipped {
   border-color: #86efac;
   background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
 }
@@ -70,6 +446,11 @@
   background-size: cover;
   background-position: center;
   background-color: #f1f5f9;
+  transition: transform 420ms var(--jp-ease-out-quint);
+}
+
+.jackpot-simple-list .project-card:hover .project-banner {
+  transform: scale(1.035);
 }
 
 .project-banner-placeholder {
@@ -132,6 +513,7 @@
   border-radius: 20px;
   background: #dcfce7;
   color: #15803d;
+  animation: jpBadgeGlow 2.8s var(--jp-ease-out-quart) infinite;
 }
 
 /* Project name */
@@ -196,7 +578,12 @@
   padding: 6px 12px;
   border-radius: 8px;
   text-decoration: none;
-  transition: all 0.15s ease;
+  transition:
+    transform 180ms var(--jp-ease-out-quart),
+    background-color 180ms var(--jp-ease-out-quart),
+    color 180ms var(--jp-ease-out-quart),
+    box-shadow 180ms var(--jp-ease-out-quart);
+  transform: translateY(0);
 }
 
 .project-link-play {
@@ -206,6 +593,8 @@
 
 .project-link-play:hover {
   background: #1e293b;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.25);
 }
 
 .project-link-code {
@@ -216,6 +605,7 @@
 .project-link-code:hover {
   background: #e2e8f0;
   color: #0f172a;
+  transform: translateY(-2px);
 }
 
 /* ──────────────────────────────────────────────
@@ -257,7 +647,10 @@
   padding: 6px 12px !important;
   border-radius: 8px !important;
   text-decoration: none !important;
-  transition: all 0.15s ease !important;
+  transition:
+    color 180ms var(--jp-ease-out-quart),
+    background-color 180ms var(--jp-ease-out-quart),
+    transform 180ms var(--jp-ease-out-quart) !important;
   background: none !important;
   border: none !important;
 }
@@ -265,6 +658,7 @@
 .nav-item:hover {
   color: #0f172a !important;
   background: #f1f5f9 !important;
+  transform: translateY(-1px) !important;
 }
 
 .nav-active {
@@ -313,6 +707,7 @@
 
 .avatar-chip:hover {
   border-color: #94a3b8 !important;
+  transform: scale(1.03) !important;
 }
 
 .avatar-img {
@@ -374,7 +769,7 @@
   padding: 24px !important;
   opacity: 0 !important;
   pointer-events: none !important;
-  transition: opacity 0.2s ease !important;
+  transition: opacity 220ms var(--jp-ease-out-quart) !important;
 }
 
 .modal-overlay.active {
@@ -393,11 +788,37 @@
   border: 1px solid #e2e8f0 !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   transform: translateY(8px) !important;
-  transition: transform 0.2s ease !important;
+  transition: transform 260ms var(--jp-ease-out-quint) !important;
 }
 
 .modal-overlay.active .modal-content {
-  transform: translateY(0) !important;
+  transform: translateY(0) scale(1) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jackpot-simple-list,
+  .jackpot-simple-list h2,
+  .jackpot-simple-list .project-item,
+  .shipped-badge,
+  .jp-shop-item {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .jackpot-simple-list .project-card,
+  .project-banner,
+  .project-link,
+  .nav-item,
+  .avatar-chip,
+  .modal-overlay,
+  .modal-content,
+  .jp-shop-item-card,
+  .jp-shop-filter-btn,
+  .jp-shop-buy-btn {
+    transition: none !important;
+    transform: none !important;
+  }
 }
 
 .modal-header {
@@ -487,7 +908,9 @@
   color: #0f172a !important;
   font-family: inherit !important;
   background: #f8fafc !important;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease !important;
   outline: none !important;
   resize: vertical !important;
 }
@@ -736,7 +1159,9 @@
   font-family: inherit !important;
   background: #f8fafc !important;
   outline: none !important;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease !important;
   resize: vertical !important;
   box-sizing: border-box !important;
 }
@@ -919,7 +1344,9 @@
   background: #ffffff !important;
   outline: none !important;
   resize: vertical !important;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease !important;
 }
 
 .journal-form-field input:focus,
