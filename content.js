@@ -37,10 +37,10 @@ function injectShopIcons() {
   const iconMap = {
     "Add Prize": "add-prize.svg",
     "Shop Rules": "shop-rules.svg",
-    "Buy": "buy.svg",
-    "Generic": "generic.svg",
-    "Setup": "setup.svg",
-    "Hardware": "hardware.svg",
+    Buy: "buy.svg",
+    Generic: "generic.svg",
+    Setup: "setup.svg",
+    Hardware: "hardware.svg",
     "Las Vegas": "las-vegas.svg",
   }
 
@@ -152,17 +152,19 @@ function transformShop(retryCount = 0) {
     btn.addEventListener("click", () => {
       // Toggle active state
       const wasActive = btn.classList.contains("jp-shop-filter-active")
-      filterBar.querySelectorAll(".jp-shop-filter-btn").forEach(b => b.classList.remove("jp-shop-filter-active"))
-      
+      filterBar
+        .querySelectorAll(".jp-shop-filter-btn")
+        .forEach(b => b.classList.remove("jp-shop-filter-active"))
+
       const items = container.querySelectorAll(".jp-shop-item")
       if (wasActive) {
         // Was active, now deactivate — show all
-        items.forEach(item => item.style.display = "")
+        items.forEach(item => (item.style.display = ""))
       } else {
         // Activate this filter
         btn.classList.add("jp-shop-filter-active")
         items.forEach(item => {
-          item.style.display = (cat === "all" || item.dataset.category === cat) ? "" : "none"
+          item.style.display = cat === "all" || item.dataset.category === cat ? "" : "none"
         })
       }
     })
@@ -212,8 +214,16 @@ function transformShop(retryCount = 0) {
 
     const hoursAmount = (item.price / 50).toFixed(1)
     const priceHtml = item.dollarAmount
-      ? item.price.toLocaleString() + ' chips <span class="jp-shop-item-dollar">(' + item.dollarAmount + ' / ' + hoursAmount + 'h)</span>'
-      : item.price.toLocaleString() + ' chips <span class="jp-shop-item-dollar">(' + hoursAmount + 'h)</span>'
+      ? item.price.toLocaleString() +
+        ' chips <span class="jp-shop-item-dollar">(' +
+        item.dollarAmount +
+        " / " +
+        hoursAmount +
+        "h)</span>"
+      : item.price.toLocaleString() +
+        ' chips <span class="jp-shop-item-dollar">(' +
+        hoursAmount +
+        "h)</span>"
 
     el.innerHTML = `
       <div class="jp-shop-item-card">
@@ -541,13 +551,13 @@ window.addEventListener("popstate", () => {
 })
 
 // Watch for body class changes (page type switches)
-const bodyClassObserver = new MutationObserver((mutations) => {
+const bodyClassObserver = new MutationObserver(mutations => {
   for (const mutation of mutations) {
     if (mutation.attributeName === "class") {
       const body = document.body
       const hasShopTransform = document.querySelector(".jp-shop-container")
       const hasDeckTransform = document.querySelector(".jackpot-simple-list")
-      
+
       // If body class changed and our transform is missing or wrong, re-init
       if (body.classList.contains("shop-body") && !hasShopTransform) {
         console.log("Jackpot+: shop-body detected without transform, re-initializing")
@@ -566,10 +576,11 @@ const bodyClassObserver = new MutationObserver((mutations) => {
 bodyClassObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] })
 
 // Watch for deck-table appearing in DOM (faster than polling)
-const deckTableObserver = new MutationObserver((mutations) => {
+const deckTableObserver = new MutationObserver(mutations => {
   for (const mutation of mutations) {
     for (const node of mutation.addedNodes) {
-      if (node.nodeType === 1) { // Element node
+      if (node.nodeType === 1) {
+        // Element node
         if (node.classList?.contains("deck-table") || node.querySelector?.(".deck-table")) {
           console.log("Jackpot+: deck-table appeared in DOM, transforming")
           setTimeout(() => transformDeck(), 100)
