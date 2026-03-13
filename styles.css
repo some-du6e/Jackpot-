@@ -1,3 +1,17 @@
+/* CSS Variables */
+:root {
+  --jp-ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --jp-ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --jp-ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --jp-font: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --jp-font-mono: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
+}
+
+/* Global font override */
+html, body, * {
+  font-family: var(--jp-font) !important;
+}
+
 /* Hide original shop elements permanently */
 .shop-category-selector,
 .shop-category-view,
@@ -5,6 +19,8 @@
 .shop-left {
   display: none !important;
 }
+
+/* Original Add Prize / Shop Rules buttons are hidden via JavaScript when moved to header */
 
 /* Make sure our container is visible and styled */
 .shop-right {
@@ -24,7 +40,59 @@
   max-width: 1120px;
   margin: 0 auto;
   padding: 24px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--jp-font);
+}
+
+/* Shop header */
+.jp-shop-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.jp-shop-header-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.jp-shop-header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.jp-shop-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 200ms var(--jp-ease-out-quart);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.jp-shop-action-btn:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.jp-shop-action-btn .jp-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 0;
 }
 
 /* Filter bar */
@@ -47,8 +115,7 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: 
-    all 200ms var(--jp-ease-out-quart);
+  transition: all 200ms var(--jp-ease-out-quart);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
@@ -159,16 +226,20 @@
   border: 1px solid #e2e8f0;
   border-radius: 16px;
   overflow: hidden;
-  transition: 
+  transition:
     border-color 220ms var(--jp-ease-out-quart),
     box-shadow 220ms var(--jp-ease-out-quart),
     transform 220ms var(--jp-ease-out-quart);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .jp-shop-item-card:hover {
   border-color: #cbd5e1;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04);
   transform: translateY(-3px);
 }
 
@@ -268,7 +339,7 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: 
+  transition:
     background 200ms var(--jp-ease-out-quart),
     transform 200ms var(--jp-ease-out-quart),
     box-shadow 200ms var(--jp-ease-out-quart);
@@ -296,12 +367,6 @@
   vertical-align: middle;
   filter: invert(0);
   opacity: 0.85;
-}
-
-:root {
-  --jp-ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
-  --jp-ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
-  --jp-ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes jpFadeLiftIn {
@@ -361,7 +426,7 @@
   max-width: 1120px;
   margin: 0 auto;
   padding: 40px 24px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--jp-font);
   box-sizing: border-box;
   animation: jpFadeLiftIn 520ms var(--jp-ease-out-expo) both;
 }
@@ -786,7 +851,7 @@
   overflow-y: auto !important;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2) !important;
   border: 1px solid #e2e8f0 !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-family: var(--jp-font) !important;
   transform: translateY(8px) !important;
   transition: transform 260ms var(--jp-ease-out-quint) !important;
 }
@@ -1022,7 +1087,7 @@
 .hackatime-option-name {
   font-size: 13px !important;
   color: #374151 !important;
-  font-family: "SF Mono", "Fira Code", monospace !important;
+  font-family: var(--jp-font-mono) !important;
 }
 
 /* Form actions */
@@ -1286,7 +1351,7 @@
   overflow-y: auto !important;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2) !important;
   border: 1px solid #e2e8f0 !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-family: var(--jp-font) !important;
 }
 
 .journal-modal-header {

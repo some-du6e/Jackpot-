@@ -9,7 +9,14 @@
   "content_scripts": [
     {
       "matches": ["https://jackpot.hackclub.com/*"],
-      "js": ["content.js"],
+      "js": [
+        "components/cleanup.js",
+        "components/styles.js",
+        "components/shop.js",
+        "components/toolbar.js",
+        "components/deck.js",
+        "content.js"
+      ],
       "css": ["styles.css"],
       "run_at": "document_idle"
     }
