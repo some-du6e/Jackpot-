@@ -1,36 +1,75 @@
 // Jackpot+ — Deck transformation (card grid → simple list)
 console.log("Jackpot+: deck module loaded.")
 
+
 function transformDeck(retryCount = 0) {
   const deckTable = document.querySelector(".deck-table")
 
   if (!deckTable) {
-    if (retryCount < 20) {
-      console.log(`Jackpot+: deck table not found, retrying (${retryCount + 1}/20)...`)
-      setTimeout(() => transformDeck(retryCount + 1), 250)
+    if (retryCount < 6) {
+      console.log(`Jackpot+: deck table not found, retrying (${retryCount + 1}/6)...`)
+      setTimeout(() => transformDeck(retryCount + 1), 300)
     } else {
-      console.log("Jackpot+: deck table not found after 20 retries, giving up")
+      // Fallback: observe .deck-page for .deck-table being added
+      const deckPage = document.querySelector('.deck-page')
+      if (deckPage && !deckPage.__jpWaitingForDeckTable) {
+        deckPage.__jpWaitingForDeckTable = true
+        console.log('Jackpot+: .deck-table missing, observing .deck-page for deck table...')
+        const mo = new MutationObserver((mutations, obs) => {
+          if (deckPage.querySelector('.deck-table')) {
+            obs.disconnect()
+            deckPage.__jpWaitingForDeckTable = false
+            setTimeout(() => transformDeck(), 50)
+          }
+        })
+        mo.observe(deckPage, { childList: true, subtree: true })
+        // Safety: stop after 10s
+        setTimeout(() => {
+          if (deckPage.__jpWaitingForDeckTable) {
+            try { mo.disconnect() } catch (e) {}
+            deckPage.__jpWaitingForDeckTable = false
+            console.log('Jackpot+: timed out waiting for .deck-table (10s)')
+          }
+        }, 10000)
+      } else {
+        console.log("Jackpot+: deck table not found after retries, waiting for DOM changes")
+      }
     }
     return
   }
 
   const cardsTrack = deckTable.querySelector("#cardsTrack")
-  if (!cardsTrack) {
-    if (retryCount < 20) {
-      console.log(`Jackpot+: cardsTrack not found, retrying (${retryCount + 1}/20)...`)
-      setTimeout(() => transformDeck(retryCount + 1), 250)
-    }
-    return
-  }
+  const cards = cardsTrack ? Array.from(cardsTrack.querySelectorAll(".card-slot-filled")) : []
 
-  const cards = Array.from(cardsTrack.querySelectorAll(".card-slot-filled"))
+  // If we don't yet have cardsTrack or any filled cards, observe the deckTable
+  // for incoming nodes instead of aggressive polling. This is more reliable
+  // when the page loads parts of the deck asynchronously.
+  if (!cardsTrack || cards.length === 0) {
+    if (!deckTable.__jpWaitingForCards) {
+      deckTable.__jpWaitingForCards = true
+      console.log('Jackpot+: waiting for cards to appear in deckTable (observer)')
 
-  if (cards.length === 0) {
-    if (retryCount < 20) {
-      console.log(`Jackpot+: no filled cards yet, retrying (${retryCount + 1}/20)...`)
-      setTimeout(() => transformDeck(retryCount + 1), 250)
-    } else {
-      console.log("Jackpot+: no filled cards found after 20 retries, deck may be empty")
+      const mo = new MutationObserver((mutations, obs) => {
+        const ct = deckTable.querySelector('#cardsTrack')
+        const filled = ct ? ct.querySelectorAll('.card-slot-filled') : []
+        if (ct && filled.length > 0) {
+          obs.disconnect()
+          deckTable.__jpWaitingForCards = false
+          // slight delay to let any rendering settle, then try again
+          setTimeout(() => transformDeck(), 80)
+        }
+      })
+
+      mo.observe(deckTable, { childList: true, subtree: true })
+
+      // Safety timeout: give up observing after 5s and log state
+      setTimeout(() => {
+        if (deckTable.__jpWaitingForCards) {
+          try { mo.disconnect() } catch (e) {}
+          deckTable.__jpWaitingForCards = false
+          console.log('Jackpot+: timed out waiting for deck cards (5s), will not retry until next navigation')
+        }
+      }, 5000)
     }
     return
   }

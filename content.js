@@ -1,9 +1,209 @@
 // Jackpot+ — Content script entry point
-// Modules loaded before this: cleanup.js, styles.js, shop.js, toolbar.js, deck.js
+// Modules loaded before this: cleanup.js, styles.js, shop.js, toolbar.js, deck.js, settings.js
 console.log("Jackpot+: content script loaded.")
+
+// Define JackpotSettings with default themes
+if (!window.JackpotSettings) {
+  window.JackpotSettings = {
+    THEMES: {
+      plain: { name: "Plain", description: "Clean, modern look" },
+      hacker: { name: "Hacker", description: "Terminal green-on-black" },
+    },
+
+    currentTheme: "plain",
+
+    getCurrentTheme() {
+      return this.currentTheme;
+    },
+
+    applyTheme(themeName) {
+      if (!this.THEMES[themeName]) return;
+      try {
+        document.documentElement.setAttribute('data-jp-theme', themeName);
+        this.currentTheme = themeName;
+        console.log(`Jackpot+: Applied theme ${themeName}`);
+      } catch (e) {
+        console.warn('Jackpot+: Failed to apply theme', e);
+      }
+    },
+
+    async setTheme(themeName) {
+      if (!this.THEMES[themeName]) {
+        console.warn(`Jackpot+: Theme '${themeName}' not found`);
+        return false;
+      }
+      this.applyTheme(themeName);
+      return new Promise((resolve) => {
+        try {
+          chrome.storage.sync.set({ jackpot_plus_theme: themeName }, () => {
+            console.log(`Jackpot+: Theme persisted as ${themeName}`);
+            resolve(true);
+          });
+        } catch (e) {
+          console.warn('Jackpot+: Failed to persist theme', e);
+          resolve(false);
+        }
+      });
+    },
+
+    initSettings() {
+      // Load persisted theme (if any) and apply it
+      try {
+        chrome.storage.sync.get(['jackpot_plus_theme'], (result) => {
+          const theme = result.jackpot_plus_theme || this.currentTheme || 'plain';
+          if (this.THEMES[theme]) {
+            this.applyTheme(theme);
+          }
+        });
+      } catch (e) {
+        console.log('Jackpot+: Settings initialized (no storage available)');
+      }
+    },
+  };
+}
 
 // Track current page type to detect navigation changes
 let __jackpotCurrentPage = null
+
+// Add Settings link to profile dropdown
+function addSettingsToDropdown() {
+  const dropdown = document.getElementById("profileDropdown")
+  if (!dropdown) return
+  
+  // Check if settings link already exists
+  if (dropdown.querySelector(".jp-settings-link")) return
+  
+  // Create settings link
+  const settingsLink = document.createElement("a")
+  settingsLink.href = "#"
+  settingsLink.className = "dropdown-item jp-settings-link"
+  settingsLink.textContent = "⚙️ Settings"
+  settingsLink.addEventListener("click", (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    openSettingsModal()
+    dropdown.style.display = "none"
+  })
+  
+  // Insert before Sign Out link
+  const signOutLink = dropdown.querySelector('a[href="/signout"]')
+  if (signOutLink) {
+    dropdown.insertBefore(settingsLink, signOutLink)
+  } else {
+    dropdown.appendChild(settingsLink)
+  }
+}
+
+// Settings modal
+function openSettingsModal() {
+  // Check if modal already exists
+  let modal = document.getElementById("jpSettingsModal")
+  if (!modal) {
+    modal = createSettingsModal()
+  }
+  modal.classList.add("active")
+  modal.setAttribute("aria-hidden", "false")
+}
+
+function closeSettingsModal() {
+  const modal = document.getElementById("jpSettingsModal")
+  if (modal) {
+    modal.classList.remove("active")
+    modal.setAttribute("aria-hidden", "true")
+  }
+}
+
+function createSettingsModal() {
+  const modal = document.createElement("div")
+  modal.id = "jpSettingsModal"
+  modal.className = "modal-overlay jp-settings-modal"
+  modal.setAttribute("aria-hidden", "true")
+  
+  const currentTheme = window.JackpotSettings?.getCurrentTheme() || "plain"
+  const themes = window.JackpotSettings?.THEMES || {}
+  
+  let themeOptions = ""
+  for (const [key, theme] of Object.entries(themes)) {
+    const selected = key === currentTheme ? "selected" : ""
+    themeOptions += `<option value="${key}" ${selected}>${theme.name} — ${theme.description}</option>`
+  }
+  
+  modal.innerHTML = `
+    <div class="modal-content jp-settings-content" role="dialog" aria-modal="true" aria-labelledby="jpSettingsTitle">
+      <div class="modal-header">
+        <h3 class="modal-title" id="jpSettingsTitle">Jackpot+ Settings</h3>
+        <button type="button" class="modal-close" id="jpSettingsClose" aria-label="Close">×</button>
+      </div>
+      <div class="jp-settings-body">
+        <div class="jp-settings-field">
+          <label for="jpThemeSelect">Theme</label>
+          <select id="jpThemeSelect" class="jp-theme-select">
+            ${themeOptions}
+          </select>
+          <p class="jp-settings-hint">Choose your preferred visual style</p>
+        </div>
+        <div class="jp-settings-preview" id="jpThemePreview">
+          <div class="jp-preview-header">Preview</div>
+          <div class="jp-preview-content">
+            <div class="jp-preview-stat jp-preview-chips">
+              <span class="jp-preview-label">Chips</span>
+              <span class="jp-preview-value">42.0</span>
+            </div>
+            <div class="jp-preview-stat jp-preview-hours">
+              <span class="jp-preview-label">Hours</span>
+              <span class="jp-preview-value">12.5h</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="project-form-actions">
+        <button type="button" class="project-cancel-btn" id="jpSettingsCancel">Cancel</button>
+        <button type="button" class="project-save-btn" id="jpSettingsSave">Save Theme</button>
+      </div>
+    </div>
+  `
+  
+  document.body.appendChild(modal)
+  
+  // Event listeners
+  const closeBtn = modal.querySelector("#jpSettingsClose")
+  const cancelBtn = modal.querySelector("#jpSettingsCancel")
+  const saveBtn = modal.querySelector("#jpSettingsSave")
+  const themeSelect = modal.querySelector("#jpThemeSelect")
+  
+  closeBtn.addEventListener("click", closeSettingsModal)
+  cancelBtn.addEventListener("click", closeSettingsModal)
+  
+  // Close on overlay click
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeSettingsModal()
+  })
+  
+  // Close on Escape
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeSettingsModal()
+  })
+  
+  // Preview theme on change
+  themeSelect.addEventListener("change", () => {
+    const selectedTheme = themeSelect.value
+    if (window.JackpotSettings) {
+      // Temporarily apply theme for preview
+      window.JackpotSettings.setTheme(selectedTheme)
+    }
+  })
+  
+  // Save theme
+  saveBtn.addEventListener("click", async () => {
+    const selectedTheme = themeSelect.value
+    if (window.JackpotSettings) {
+      await window.JackpotSettings.setTheme(selectedTheme)
+    }
+    closeSettingsModal()
+  })
+  
+  return modal
+}
 
 function getCurrentPageType() {
   if (document.body.classList.contains("shop-body")) return "shop"
@@ -17,6 +217,12 @@ injectStyles()
 injectShopIcons()
 
 function initPage() {
+  // Initialize settings on first load
+  if (window.JackpotSettings && !window.__jackpotSettingsInitialized) {
+    window.JackpotSettings.initSettings()
+    window.__jackpotSettingsInitialized = true
+  }
+  
   // Remove any previous JP transformations so they can be re-applied
   document.querySelectorAll(".jp-shop-container").forEach(el => el.remove())
   document.querySelectorAll(".jackpot-simple-list").forEach(el => el.remove())
@@ -39,25 +245,21 @@ function initPage() {
   if (document.body.classList.contains("shop-body")) {
     transformShop()
   } else if (document.body.classList.contains("deck-body")) {
-    // The site's initDeck() has a deckInitialized flag that prevents re-running.
-    // Content scripts can't access page JS directly, so inject a script tag.
-    const resetScript = document.createElement("script")
-    resetScript.textContent = `
-      if (typeof deckInitialized !== "undefined") {
-        deckInitialized = false;
+    // Use chrome.scripting API via service worker to execute in MAIN world
+    // This resets the deckInitialized flag so initDeck() can run again
+    chrome.runtime.sendMessage({ action: "resetDeck" }, (response) => {
+      if (chrome.runtime.lastError) {
+        console.warn("Jackpot+: resetDeck message failed:", chrome.runtime.lastError.message);
+      } else {
+        console.log("Jackpot+: resetDeck response:", response);
       }
-      if (typeof initDeck === "function") {
-        console.log("Jackpot+: injected script calling initDeck()");
-        initDeck();
-      }
-    `
-    document.head.appendChild(resetScript)
-    resetScript.remove()
-    // Now transform after a delay to let initDeck() populate the DOM
-    setTimeout(() => transformDeck(), 300)
+      // Wait for initDeck() to run and render the deck table, then transform
+      setTimeout(() => transformDeck(), 800)
+    })
   }
   injectShopIcons()
   enhanceToolbar()
+  addSettingsToDropdown()
 }
 
 // Run on initial load

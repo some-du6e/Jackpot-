@@ -1,0 +1,233 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Theme variables */
+:root {
+  --jp-bg-primary: #ffffff;
+  --jp-bg-secondary: #f8fafc;
+  --jp-text-primary: #0f172a;
+  --jp-text-secondary: #64748b;
+  --jp-border: #e2e8f0;
+  --jp-accent: #6366f1;
+  --jp-font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Hacker theme overrides */
+html[data-jp-theme="hacker"] {
+  --jp-bg-primary: #0a0a0a;
+  --jp-bg-secondary: #0d0d0d;
+  --jp-text-primary: #00ff41;
+  --jp-text-secondary: #00cc33;
+  --jp-border: #002200;
+  --jp-accent: #00ff41;
+  --jp-font-ui: 'Fira Code', 'SF Mono', monospace;
+}
+
+body {
+  width: 320px;
+  font-family: var(--jp-font-ui);
+  background: var(--jp-bg-primary);
+  color: var(--jp-text-primary);
+}
+
+.popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--jp-border);
+}
+
+.popup-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.popup-title-icon {
+  font-size: 20px;
+}
+
+.popup-version {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.popup-body {
+  padding: 20px;
+}
+
+.settings-section {
+  margin-bottom: 20px;
+}
+
+.settings-section:last-child {
+  margin-bottom: 0;
+}
+
+.settings-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.theme-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.theme-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--jp-border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: var(--jp-bg-secondary);
+}
+
+.theme-option:hover {
+  border-color: var(--jp-text-secondary);
+  background: var(--jp-bg-primary);
+}
+
+.theme-option.selected {
+  border-color: var(--jp-accent);
+  background: rgba(99,102,241,0.06);
+}
+
+.theme-radio {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #cbd5e1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.theme-option.selected .theme-radio {
+  border-color: #6366f1;
+}
+
+.theme-radio-inner {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6366f1;
+  transform: scale(0);
+  transition: transform 0.15s ease;
+}
+
+.theme-option.selected .theme-radio-inner {
+  transform: scale(1);
+}
+
+.theme-info {
+  flex: 1;
+}
+
+.theme-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--jp-text-primary);
+  margin-bottom: 2px;
+}
+
+.theme-desc {
+  font-size: 12px;
+  color: var(--jp-text-secondary);
+}
+
+.theme-preview {
+  width: 40px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.theme-preview-plain {
+  background: linear-gradient(135deg, var(--jp-bg-secondary) 50%, var(--jp-bg-primary) 50%);
+}
+
+.theme-preview-hacker {
+  background: linear-gradient(135deg, #0a0a0a 50%, #111111 50%);
+  position: relative;
+}
+
+.theme-preview-hacker::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: #00ff41;
+  border-radius: 1px;
+}
+
+.popup-footer {
+  padding: 14px 20px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.popup-link {
+  font-size: 12px;
+  color: #6366f1;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.popup-link:hover {
+  text-decoration: underline;
+}
+
+.popup-footer-text {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* Status indicator */
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #16a34a;
+}
+
+.status-text {
+  font-size: 12px;
+  color: #15803d;
+  font-weight: 500;
+}

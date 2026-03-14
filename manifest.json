@@ -6,12 +6,17 @@
   "background": {
     "service_worker": "service-worker.js"
   },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Jackpot+ Settings"
+  },
   "content_scripts": [
     {
       "matches": ["https://jackpot.hackclub.com/*"],
       "js": [
         "components/cleanup.js",
         "components/styles.js",
+        "components/settings.js",
         "components/shop.js",
         "components/toolbar.js",
         "components/deck.js",
@@ -23,9 +28,10 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["icons/*.svg"],
+      "resources": ["icons/*.svg", "page-script.js", "injected-styles.css"],
       "matches": ["https://jackpot.hackclub.com/*"]
     }
   ],
-  "permissions": ["storage"]
+  "permissions": ["storage", "scripting"],
+  "host_permissions": ["https://jackpot.hackclub.com/*"]
 }
