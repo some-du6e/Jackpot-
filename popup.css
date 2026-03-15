@@ -12,7 +12,7 @@
   --jp-text-secondary: #64748b;
   --jp-border: #e2e8f0;
   --jp-accent: #6366f1;
-  --jp-font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+  --jp-font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
 }
 
 /* Hacker theme overrides */
@@ -23,7 +23,7 @@ html[data-jp-theme="hacker"] {
   --jp-text-secondary: #00cc33;
   --jp-border: #002200;
   --jp-accent: #00ff41;
-  --jp-font-ui: 'Fira Code', 'SF Mono', monospace;
+  --jp-font-ui: "Fira Code", "SF Mono", monospace;
 }
 
 body {
@@ -106,7 +106,7 @@ body {
 
 .theme-option.selected {
   border-color: var(--jp-accent);
-  background: rgba(99,102,241,0.06);
+  background: rgba(99, 102, 241, 0.06);
 }
 
 .theme-radio {
@@ -173,7 +173,7 @@ body {
 }
 
 .theme-preview-hacker::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 4px;
   left: 4px;

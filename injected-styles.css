@@ -3,7 +3,9 @@
   --jp-ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --jp-ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
   --jp-ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --jp-font: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --jp-font:
+    "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
   --jp-font-mono: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
 
   /* Theme-aware color variables (defaults for plain theme) */
@@ -22,7 +24,9 @@
 }
 
 /* Global font override */
-html, body, * {
+html,
+body,
+* {
   font-family: var(--jp-font-ui) !important;
 }
 
@@ -161,23 +165,23 @@ html, body, * {
   opacity: 1;
   border: 1.5px solid var(--jp-border);
 
-.jp-shop-filter-active .jp-icon {
-  filter: invert(1);
-}
+  .jp-shop-filter-active .jp-icon {
+    filter: invert(1);
+  }
 
-/* Sort controls */
-.jp-shop-sort {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
-  background: var(--jp-text-primary);
-  color: var(--jp-bg-primary);
-  border-color: var(--jp-text-primary);
-  font-size: 13px;
-  font-weight: 600;
-  color: #94a3b8;
-}
+  /* Sort controls */
+  .jp-shop-sort {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    background: var(--jp-text-primary);
+    color: var(--jp-bg-primary);
+    border-color: var(--jp-text-primary);
+    font-size: 13px;
+    font-weight: 600;
+    color: #94a3b8;
+  }
   background: var(--jp-accent);
   color: var(--jp-bg-primary);
   padding: 8px 14px;
@@ -959,7 +963,9 @@ html, body, * {
   font-family: inherit !important;
   cursor: pointer !important;
   outline: none !important;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease !important;
   appearance: none !important;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E") !important;
   background-repeat: no-repeat !important;
@@ -1107,7 +1113,8 @@ html, body, * {
   .modal-content,
   .jp-shop-item-card,
   .jp-shop-filter-btn,
-  .jp-shop-buy-btn {
+  .jp-shop-buy-btn,
+  .jp-shop-star-btn {
     transition: none !important;
     transform: none !important;
   }
@@ -1742,6 +1749,290 @@ html, body, * {
   }
 }
 
+/* ──────────────────────────────────────────────
+   GOAL FEATURE
+────────────────────────────────────────────── */
+
+/* Star button */
+.jp-shop-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.jp-shop-star-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 200ms var(--jp-ease-out-quart);
+  filter: grayscale(1) opacity(0.4);
+}
+
+.jp-shop-star-btn:hover {
+  border-color: #fbbf24;
+  filter: grayscale(0.5) opacity(0.7);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.2);
+}
+
+.jp-shop-star-btn.starred {
+  filter: none;
+  border-color: #fbbf24;
+  background: #fffbeb;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.15);
+}
+
+.jp-shop-star-btn.starred:hover {
+  background: #fef3c7;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.25);
+}
+
+/* Goal badge on item card */
+.jp-item-goal-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: #fef3c7;
+  color: #b45309;
+  margin-bottom: 10px;
+  letter-spacing: 0.2px;
+}
+
+/* Goal modal */
+.jp-goal-modal-content {
+  max-width: 440px !important;
+}
+
+.jp-goal-body {
+  padding: 20px 24px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.jp-goal-item-info {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.jp-goal-item-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+
+.jp-goal-item-price {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.jp-goal-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.jp-goal-stat {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.jp-goal-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.jp-goal-stat-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.jp-goal-input {
+  width: 100% !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  padding: 10px 12px !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  font-family: inherit !important;
+  background: #f8fafc !important;
+  outline: none !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+  text-align: center;
+}
+
+.jp-goal-input:focus {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+  background: #ffffff !important;
+}
+
+.jp-goal-calculation {
+  background: #0f172a;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.jp-goal-calc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.jp-goal-calc-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.jp-goal-calc-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #e2e8f0;
+  font-family: var(--jp-font-mono);
+}
+
+.jp-goal-calc-highlight {
+  padding-top: 10px;
+  border-top: 1px solid #1e293b;
+}
+
+.jp-goal-calc-highlight .jp-goal-calc-label {
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+.jp-goal-calc-highlight .jp-goal-calc-value {
+  color: #fbbf24;
+  font-size: 20px;
+}
+
+.jp-goal-ended {
+  text-align: center;
+  padding: 20px;
+  font-size: 14px;
+  color: #94a3b8;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+/* Toolbar goal pill */
+.jp-toolbar-goal-pill {
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 4px 12px !important;
+  background: #fef3c7 !important;
+  border: 1px solid #fbbf24 !important;
+  border-radius: 20px !important;
+  text-decoration: none !important;
+  transition: all 180ms var(--jp-ease-out-quart) !important;
+  cursor: pointer !important;
+}
+
+.jp-toolbar-goal-pill:hover {
+  background: #fde68a !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.25) !important;
+}
+
+.jp-goal-pill-icon {
+  font-size: 13px !important;
+}
+
+.jp-goal-pill-text {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #b45309 !important;
+  font-family: var(--jp-font-mono) !important;
+}
+
+/* Goal banner */
+.jp-shop-goal-banner {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  border: 1px solid #334155;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.15);
+}
+
+.jp-goal-banner-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.jp-goal-banner-icon {
+  font-size: 18px;
+}
+
+.jp-goal-banner-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f8fafc;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.jp-goal-banner-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.jp-goal-banner-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.jp-goal-banner-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.jp-goal-banner-item-target {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fbbf24;
+  font-family: var(--jp-font-mono);
+}
+
 /* ---------------------------
    Hacker theme overrides
    --------------------------- */
@@ -1762,14 +2053,14 @@ html[data-jp-theme="hacker"] {
 
 /* subtle scanline overlay */
 html[data-jp-theme="hacker"]::after {
-  content: '';
+  content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
   background-image: repeating-linear-gradient(
     0deg,
-    rgba(0,0,0,0.04) 0px,
-    rgba(0,0,0,0.04) 1px,
+    rgba(0, 0, 0, 0.04) 0px,
+    rgba(0, 0, 0, 0.04) 1px,
     transparent 1px,
     transparent 3px
   );
@@ -1814,7 +2105,129 @@ html[data-jp-theme="hacker"] .project-link-play,
 html[data-jp-theme="hacker"] .project-save-btn {
   background: var(--jp-text-primary) !important;
   color: var(--jp-bg-primary) !important;
-  text-shadow: 0 0 6px rgba(0,255,65,0.15) !important;
+  text-shadow: 0 0 6px rgba(0, 255, 65, 0.15) !important;
+}
+
+/* Goal feature — hacker theme */
+html[data-jp-theme="hacker"] .jp-toolbar-goal-pill {
+  background: rgba(251, 191, 36, 0.1) !important;
+  border-color: rgba(251, 191, 36, 0.3) !important;
+}
+
+html[data-jp-theme="hacker"] .jp-toolbar-goal-pill:hover {
+  background: rgba(251, 191, 36, 0.2) !important;
+}
+
+html[data-jp-theme="hacker"] .jp-goal-pill-text {
+  color: #fbbf24 !important;
+}
+
+html[data-jp-theme="hacker"] .jp-shop-star-btn {
+  background: var(--jp-bg-secondary) !important;
+  border-color: var(--jp-border) !important;
+  filter: grayscale(1) opacity(0.3);
+}
+
+html[data-jp-theme="hacker"] .jp-shop-star-btn:hover {
+  border-color: #fbbf24 !important;
+  filter: grayscale(0.5) opacity(0.6);
+}
+
+html[data-jp-theme="hacker"] .jp-shop-star-btn.starred {
+  filter: none;
+  border-color: #fbbf24 !important;
+  background: rgba(251, 191, 36, 0.1) !important;
+}
+
+html[data-jp-theme="hacker"] .jp-item-goal-badge {
+  background: rgba(251, 191, 36, 0.15) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(251, 191, 36, 0.3) !important;
+}
+
+html[data-jp-theme="hacker"] .jp-goal-item-info,
+html[data-jp-theme="hacker"] .jp-goal-stat {
+  background: var(--jp-bg-secondary) !important;
+  border-color: var(--jp-border) !important;
+}
+
+html[data-jp-theme="hacker"] .jp-goal-item-name,
+html[data-jp-theme="hacker"] .jp-goal-stat-value {
+  color: var(--jp-text-primary) !important;
+}
+
+html[data-jp-theme="hacker"] .jp-goal-item-price,
+html[data-jp-theme="hacker"] .jp-goal-stat-label {
+  color: var(--jp-text-secondary) !important;
+}
+
+html[data-jp-theme="hacker"] .jp-goal-input {
+  background: var(--jp-bg-secondary) !important;
+  border-color: var(--jp-border) !important;
+  color: var(--jp-text-primary) !important;
+}
+
+html[data-jp-theme="hacker"] .jp-goal-input:focus {
+  border-color: var(--jp-accent) !important;
+  box-shadow: 0 0 0 3px rgba(0, 255, 65, 0.1) !important;
+}
+
+html[data-jp-theme="hacker"] .jp-goal-calculation {
+  background: #001a00 !important;
+  border: 1px solid var(--jp-border) !important;
+}
+
+html[data-jp-theme="hacker"] .jp-goal-calc-label {
+  color: var(--jp-text-secondary) !important;
+}
+
+html[data-jp-theme="hacker"] .jp-goal-calc-value {
+  color: var(--jp-text-primary) !important;
+}
+
+html[data-jp-theme="hacker"] .jp-goal-calc-highlight {
+  border-top-color: var(--jp-border) !important;
+}
+
+html[data-jp-theme="hacker"] .jp-goal-calc-highlight .jp-goal-calc-label,
+html[data-jp-theme="hacker"] .jp-goal-calc-highlight .jp-goal-calc-value {
+  color: #fbbf24 !important;
+}
+
+html[data-jp-theme="hacker"] .jp-goal-ended {
+  background: var(--jp-bg-secondary) !important;
+  border-color: var(--jp-border) !important;
+  color: var(--jp-text-secondary) !important;
+}
+
+html[data-jp-theme="hacker"] .jp-shop-goal-banner {
+  background: linear-gradient(135deg, #001a00 0%, #002200 100%) !important;
+  border-color: var(--jp-border) !important;
+}
+
+html[data-jp-theme="hacker"] .jp-goal-banner-title {
+  color: var(--jp-text-primary) !important;
+}
+
+html[data-jp-theme="hacker"] .jp-goal-banner-item {
+  background: rgba(0, 255, 65, 0.04) !important;
+  border-color: var(--jp-border) !important;
+}
+
+html[data-jp-theme="hacker"] .jp-goal-banner-item-name {
+  color: var(--jp-text-primary) !important;
+}
+
+/* Hackatime stat colors */
+.jp-hack-stat .jp-stat-value {
+  color: #16a34a !important;
+}
+.jp-hack-stat .jp-stat-label {
+  color: #94a3b8 !important;
+}
+
+html[data-jp-theme="hacker"] .jp-goal-banner-item-target {
+  color: #fbbf24 !important;
 }
 
 html[data-jp-theme="hacker"] .jp-preview-value,
@@ -1866,5 +2279,3 @@ html[data-jp-theme="hacker"] .deck-page {
 html[data-jp-theme="hacker"] .deck-body {
   background-color: var(--jp-bg-primary) !important;
 }
-
-

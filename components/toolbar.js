@@ -119,6 +119,10 @@ function enhanceToolbar(retryCount = 0) {
 
     prevChips = chipsValue
     prevHours = hoursStr
+
+    // Still update goal pill
+    renderToolbarGoalPill(toolbarRight)
+    renderHackTimeStat(toolbarRight)
     return
   }
 
@@ -142,5 +146,131 @@ function enhanceToolbar(retryCount = 0) {
   if (tokenCount) tokenCount.style.display = "none"
   toolbarRight.insertBefore(statsContainer, toolbarRight.firstChild)
 
+  // Render goal pill in toolbar
+  renderToolbarGoalPill(toolbarRight)
+  renderHackTimeStat(toolbarRight)
+
   console.log("Jackpot+: toolbar enhanced with stats", { chips: chipsValue, hours: hoursStr })
+}
+
+function renderHackTimeStat(toolbarRight) {
+  // Combine today's hackatime hours with the goal pill (show: Xh done / Yh target)
+  try {
+    chrome.storage.sync.get(["hackatime_api_key"], async result => {
+      const key = result.hackatime_api_key
+
+      // Compute target hours per day from goals
+      let targetHours = 0
+      try {
+        if (typeof loadGoals === "function" && typeof getDaysRemaining === "function") {
+          const goals = loadGoals()
+          const goalIds = Object.keys(goals)
+          const totalDays = getDaysRemaining()
+          goalIds.forEach(itemId => {
+            const goal = goals[itemId]
+            if (!goal || !goal.price) return
+            const workingDays = Math.max(totalDays - (goal.breakDays || 0), 1)
+            const chipsPerDay = Math.ceil(goal.price / workingDays)
+            targetHours += chipsPerDay / 50
+          })
+        }
+      } catch (err) {
+        console.warn("Jackpot+: failed to compute target hours", err)
+      }
+
+      // If no goals and no key, nothing to show
+      if (!targetHours && !key) return
+
+      // Default displayed values
+      let todayHours = null
+
+      if (key) {
+        try {
+          const res = await fetch("https://hackatime.hackclub.com/api/hackatime/v1/users/current/statusbar/today", {
+            headers: { Authorization: `Bearer ${key}` },
+            cache: "no-cache",
+            credentials: "omit",
+          })
+
+          if (res.ok) {
+            const data = await res.json()
+            const seconds = (data && data.data && data.data.grand_total && data.data.grand_total.total_seconds) || 0
+            todayHours = (seconds / 3600)
+          } else {
+            console.warn("Jackpot+: Hackatime fetch failed", res.status)
+          }
+        } catch (e) {
+          console.warn("Jackpot+: Error fetching Hackatime data", e)
+        }
+      }
+
+      // Build pill content
+      const goalPill = document.querySelector(".jp-toolbar-goal-pill") || (function() {
+        const p = document.createElement("a")
+        p.href = "/shop"
+        p.className = "jp-toolbar-goal-pill"
+        return p
+      })()
+
+      const th = targetHours.toFixed(1)
+      const dh = todayHours != null ? todayHours.toFixed(1) : "-"
+      goalPill.innerHTML = `<span class="jp-goal-pill-icon">🎯</span><span class="jp-goal-pill-text">${dh}h / ${th}h</span>`
+      goalPill.title = `${dh}h done today — target ${th}h/day — click to view shop`
+
+      // Insert at toolbar start
+      const toolbar = toolbarRight
+      const first = toolbar.firstChild
+      if (!document.querySelector(".jp-toolbar-goal-pill")) {
+        if (first) toolbar.insertBefore(goalPill, first)
+        else toolbar.appendChild(goalPill)
+      }
+    })
+  } catch (e) {
+    console.warn("Jackpot+: failed to read hackatime_api_key from storage", e)
+  }
+}
+
+function renderToolbarGoalPill(toolbarRight) {
+  // Remove existing goal pill
+  const existing = document.querySelector(".jp-toolbar-goal-pill")
+  if (existing) existing.remove()
+
+  // Check if we have goals (functions from shop.js)
+  if (typeof loadGoals !== "function" || typeof getDaysRemaining !== "function") return
+
+  const goals = loadGoals()
+  const goalIds = Object.keys(goals)
+  if (goalIds.length === 0) return
+
+  const totalDays = getDaysRemaining()
+  if (totalDays <= 0) return
+
+  // Calculate total hours per day across all goals
+  let totalHoursPerDay = 0
+  goalIds.forEach(itemId => {
+    const goal = goals[itemId]
+    const workingDays = Math.max(totalDays - goal.breakDays, 1)
+    // We don't have item prices here, so we store them in the goal
+    if (goal.price) {
+      const chipsPerDay = Math.ceil(goal.price / workingDays)
+      totalHoursPerDay += chipsPerDay / 50
+    }
+  })
+
+  const pill = document.createElement("a")
+  pill.href = "/shop"
+  pill.className = "jp-toolbar-goal-pill"
+  pill.title = `${goalIds.length} goal${goalIds.length > 1 ? "s" : ""} set — click to view shop`
+
+  if (goalIds.length === 1 && goals[goalIds[0]].price) {
+    const goal = goals[goalIds[0]]
+    const workingDays = Math.max(totalDays - goal.breakDays, 1)
+    const chipsPerDay = Math.ceil(goal.price / workingDays)
+    const hoursPerDay = (chipsPerDay / 50).toFixed(1)
+    pill.innerHTML = `<span class="jp-goal-pill-icon">🎯</span><span class="jp-goal-pill-text">${hoursPerDay}h/day</span>`
+  } else {
+    pill.innerHTML = `<span class="jp-goal-pill-icon">🎯</span><span class="jp-goal-pill-text">${goalIds.length} goals</span>`
+  }
+
+  toolbarRight.insertBefore(pill, toolbarRight.firstChild)
 }

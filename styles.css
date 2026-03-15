@@ -436,14 +436,55 @@ html, body, * {
   z-index: 2 !important;
 }
 
+/* Deck header with title and add button */
+.jp-deck-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  animation: jpTitleIn 480ms var(--jp-ease-out-quint) both;
+}
+
 /* Header */
 .jackpot-simple-list h2 {
   font-size: 32px;
   font-weight: 700;
-  margin: 0 0 32px 0;
+  margin: 0;
   color: #0f172a;
   letter-spacing: -0.5px;
-  animation: jpTitleIn 480ms var(--jp-ease-out-quint) both;
+}
+
+/* Add Project button */
+.jp-add-project-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 12px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 200ms var(--jp-ease-out-quart);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+  font-family: var(--jp-font);
+}
+
+.jp-add-project-btn:hover {
+  background: #1e293b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.3);
+}
+
+.jp-add-project-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.2);
+}
+
+.jp-add-project-btn svg {
+  flex-shrink: 0;
 }
 
 /* Project list grid */
@@ -1481,9 +1522,20 @@ html, body, * {
     padding: 24px 16px;
   }
 
+  .jp-deck-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
   .jackpot-simple-list h2 {
     font-size: 24px;
-    margin-bottom: 24px;
+  }
+
+  .jp-add-project-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .project-list {

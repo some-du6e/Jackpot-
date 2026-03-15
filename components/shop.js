@@ -1,6 +1,205 @@
 // Jackpot+ — Shop transformation and icon injection
 console.log("Jackpot+: shop module loaded.")
 
+const JP_GOALS_KEY = "jackpot_plus_goals"
+const JP_EVENT_END = new Date("2026-05-08T23:59:59")
+
+function loadGoals() {
+  try {
+    const raw = localStorage.getItem(JP_GOALS_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+function saveGoals(goals) {
+  try {
+    localStorage.setItem(JP_GOALS_KEY, JSON.stringify(goals))
+  } catch {}
+}
+
+function getDaysRemaining() {
+  const now = new Date()
+  const diff = JP_EVENT_END - now
+  if (diff <= 0) return 0
+  return Math.ceil(diff / 86400000)
+}
+
+function createGoalModal(item, existingGoal, onSave, onRemove) {
+  const totalDays = getDaysRemaining()
+  const isEventOver = totalDays <= 0
+
+  const modal = document.createElement("div")
+  modal.className = "modal-overlay jp-goal-modal"
+  modal.setAttribute("aria-hidden", "true")
+
+  const savedBreakDays = existingGoal ? existingGoal.breakDays : 0
+  const workingDays = Math.max(totalDays - savedBreakDays, 1)
+  const chipsPerDay = Math.ceil(item.price / workingDays)
+  const hoursPerDay = (chipsPerDay / 50).toFixed(1)
+
+  modal.innerHTML = `
+    <div class="modal-content jp-goal-modal-content" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h3 class="modal-title">🎯 Set Goal</h3>
+        <button type="button" class="modal-close jp-goal-close" aria-label="Close">×</button>
+      </div>
+      <div class="jp-goal-body">
+        <div class="jp-goal-item-info">
+          <div class="jp-goal-item-name">${item.name}</div>
+          <div class="jp-goal-item-price">${item.price.toLocaleString()} chips${item.dollarAmount ? ` (${item.dollarAmount})` : ""}</div>
+        </div>
+
+        <div class="jp-goal-stats-grid">
+          <div class="jp-goal-stat">
+            <span class="jp-goal-stat-label">Event ends</span>
+            <span class="jp-goal-stat-value">May 8, 2026</span>
+          </div>
+          <div class="jp-goal-stat">
+            <span class="jp-goal-stat-label">Days left</span>
+            <span class="jp-goal-stat-value">${isEventOver ? "Ended" : totalDays}</span>
+          </div>
+        </div>
+
+        ${
+          isEventOver
+            ? `<div class="jp-goal-ended">The event has ended. Goals are no longer available.</div>`
+            : `
+        <div class="project-form-field">
+          <label for="jpGoalBreakDays">Break days (days you won't work)</label>
+          <input type="number" id="jpGoalBreakDays" class="jp-goal-input" min="0" max="${totalDays - 1}" value="${savedBreakDays}" />
+          <p class="jp-settings-hint">Weekends, holidays, rest days — anything where you won't log hours</p>
+        </div>
+
+        <div class="jp-goal-calculation">
+          <div class="jp-goal-calc-row">
+            <span class="jp-goal-calc-label">Working days</span>
+            <span class="jp-goal-calc-value" id="jpGoalWorkingDays">${workingDays}</span>
+          </div>
+          <div class="jp-goal-calc-row">
+            <span class="jp-goal-calc-label">Chips per day</span>
+            <span class="jp-goal-calc-value" id="jpGoalChipsPerDay">${chipsPerDay.toLocaleString()}</span>
+          </div>
+          <div class="jp-goal-calc-row jp-goal-calc-highlight">
+            <span class="jp-goal-calc-label">⚡ Hours per day</span>
+            <span class="jp-goal-calc-value" id="jpGoalHoursPerDay">${hoursPerDay}h</span>
+          </div>
+        </div>
+        `
+        }
+      </div>
+      <div class="project-form-actions">
+        ${existingGoal ? `<button type="button" class="project-delete-btn jp-goal-remove">Remove Goal</button>` : `<div></div>`}
+        <div style="display:flex;gap:8px;">
+          <button type="button" class="project-cancel-btn jp-goal-cancel">Cancel</button>
+          ${isEventOver ? "" : `<button type="button" class="project-save-btn jp-goal-save">Save Goal</button>`}
+        </div>
+      </div>
+    </div>
+  `
+
+  document.body.appendChild(modal)
+
+  // Animate in
+  requestAnimationFrame(() => {
+    modal.classList.add("active")
+    modal.setAttribute("aria-hidden", "false")
+  })
+
+  function close() {
+    modal.classList.remove("active")
+    modal.setAttribute("aria-hidden", "true")
+    setTimeout(() => modal.remove(), 300)
+  }
+
+  // Event listeners
+  modal.querySelector(".jp-goal-close").addEventListener("click", close)
+  modal.querySelector(".jp-goal-cancel").addEventListener("click", close)
+  modal.addEventListener("click", e => {
+    if (e.target === modal) close()
+  })
+
+  const escHandler = e => {
+    if (e.key === "Escape") {
+      close()
+      document.removeEventListener("keydown", escHandler)
+    }
+  }
+  document.addEventListener("keydown", escHandler)
+
+  if (!isEventOver) {
+    const breakDaysInput = modal.querySelector("#jpGoalBreakDays")
+    breakDaysInput.addEventListener("input", () => {
+      let breakDays = parseInt(breakDaysInput.value) || 0
+      breakDays = Math.max(0, Math.min(breakDays, totalDays - 1))
+      const wd = Math.max(totalDays - breakDays, 1)
+      const cpd = Math.ceil(item.price / wd)
+      const hpd = (cpd / 50).toFixed(1)
+      modal.querySelector("#jpGoalWorkingDays").textContent = wd
+      modal.querySelector("#jpGoalChipsPerDay").textContent = cpd.toLocaleString()
+      modal.querySelector("#jpGoalHoursPerDay").textContent = hpd + "h"
+    })
+
+    modal.querySelector(".jp-goal-save").addEventListener("click", () => {
+      const breakDays = Math.max(0, Math.min(parseInt(breakDaysInput.value) || 0, totalDays - 1))
+      onSave(breakDays)
+      close()
+    })
+  }
+
+  const removeBtn = modal.querySelector(".jp-goal-remove")
+  if (removeBtn) {
+    removeBtn.addEventListener("click", () => {
+      onRemove()
+      close()
+    })
+  }
+}
+
+function renderGoalBanner(container, allItems) {
+  const existing = container.querySelector(".jp-shop-goal-banner")
+  if (existing) existing.remove()
+
+  const goals = loadGoals()
+  const goalIds = Object.keys(goals)
+  if (goalIds.length === 0) return
+
+  const totalDays = getDaysRemaining()
+  if (totalDays <= 0) return
+
+  const banner = document.createElement("div")
+  banner.className = "jp-shop-goal-banner"
+
+  let bannerHtml = `<div class="jp-goal-banner-header">
+    <span class="jp-goal-banner-icon">🎯</span>
+    <span class="jp-goal-banner-title">Your Goals</span>
+  </div>
+  <div class="jp-goal-banner-items">`
+
+  goalIds.forEach(itemId => {
+    const item = allItems.find(i => i.id === itemId)
+    if (!item) return
+    const goal = goals[itemId]
+    const workingDays = Math.max(totalDays - goal.breakDays, 1)
+    const chipsPerDay = Math.ceil(item.price / workingDays)
+    const hoursPerDay = (chipsPerDay / 50).toFixed(1)
+
+    bannerHtml += `
+      <div class="jp-goal-banner-item">
+        <span class="jp-goal-banner-item-name">${item.name}</span>
+        <span class="jp-goal-banner-item-target">${hoursPerDay}h/day · ${workingDays} working days</span>
+      </div>
+    `
+  })
+
+  bannerHtml += `</div>`
+  banner.innerHTML = bannerHtml
+
+  // Insert at the very top of the container
+  container.prepend(banner)
+}
+
 function injectShopIcons() {
   const iconMap = {
     "Add Prize": "add-prize.svg",
@@ -233,15 +432,31 @@ function transformShop(retryCount = 0) {
         hoursAmount +
         "h)</span>"
 
+    const goals = loadGoals()
+    const isGoal = !!goals[item.id]
+    const totalDays = getDaysRemaining()
+    let goalBadgeHtml = ""
+    if (isGoal && totalDays > 0) {
+      const goal = goals[item.id]
+      const workingDays = Math.max(totalDays - goal.breakDays, 1)
+      const chipsPerDay = Math.ceil(item.price / workingDays)
+      const hoursPerDay = (chipsPerDay / 50).toFixed(1)
+      goalBadgeHtml = `<span class="jp-item-goal-badge">🎯 ${hoursPerDay}h/day</span>`
+    }
+
     el.innerHTML = `
       <div class="jp-shop-item-card">
         ${item.image ? `<div class="jp-shop-item-image" style="background-image: url('${item.image}')"></div>` : ""}
         <div class="jp-shop-item-content">
           <span class="jp-shop-item-category jp-cat-${item.category}">${item.categoryLabel}</span>
           <h3 class="jp-shop-item-name">${item.name}</h3>
+          ${goalBadgeHtml}
           <div class="jp-shop-item-footer">
             <span class="jp-shop-item-price">${priceHtml}</span>
-            <button class="jp-shop-buy-btn" data-item-id="${item.id}">Buy</button>
+            <div class="jp-shop-item-actions">
+              <button class="jp-shop-star-btn ${isGoal ? "starred" : ""}" data-item-id="${item.id}" title="${isGoal ? "Edit goal" : "Set as goal"}">⭐</button>
+              <button class="jp-shop-buy-btn" data-item-id="${item.id}">Buy</button>
+            </div>
           </div>
         </div>
       </div>
@@ -250,6 +465,32 @@ function transformShop(retryCount = 0) {
     el.querySelector(".jp-shop-buy-btn").addEventListener("click", () => {
       const originalBtn = document.querySelector(`.shop-buy-btn[data-item-id="${item.id}"]`)
       if (originalBtn) originalBtn.click()
+    })
+
+    el.querySelector(".jp-shop-star-btn").addEventListener("click", () => {
+      const currentGoals = loadGoals()
+      const existingGoal = currentGoals[item.id] || null
+      createGoalModal(
+        item,
+        existingGoal,
+        breakDays => {
+          const updatedGoals = loadGoals()
+          updatedGoals[item.id] = { breakDays, price: item.price, name: item.name, savedAt: new Date().toISOString() }
+          saveGoals(updatedGoals)
+          // Re-render the shop to reflect changes
+          const existingContainer = document.querySelector(".jp-shop-container")
+          if (existingContainer) existingContainer.remove()
+          transformShop()
+        },
+        () => {
+          const updatedGoals = loadGoals()
+          delete updatedGoals[item.id]
+          saveGoals(updatedGoals)
+          const existingContainer = document.querySelector(".jp-shop-container")
+          if (existingContainer) existingContainer.remove()
+          transformShop()
+        }
+      )
     })
 
     grid.appendChild(el)
@@ -293,6 +534,9 @@ function transformShop(retryCount = 0) {
   })
 
   shopRight.appendChild(container)
+
+  // Render goal banner if goals exist
+  renderGoalBanner(container, allItems)
 
   console.log(`Jackpot+: shop transformed with ${allItems.length} items`)
 }

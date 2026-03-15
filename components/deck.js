@@ -1,7 +1,6 @@
 // Jackpot+ — Deck transformation (card grid → simple list)
 console.log("Jackpot+: deck module loaded.")
 
-
 function transformDeck(retryCount = 0) {
   const deckTable = document.querySelector(".deck-table")
 
@@ -11,12 +10,12 @@ function transformDeck(retryCount = 0) {
       setTimeout(() => transformDeck(retryCount + 1), 300)
     } else {
       // Fallback: observe .deck-page for .deck-table being added
-      const deckPage = document.querySelector('.deck-page')
+      const deckPage = document.querySelector(".deck-page")
       if (deckPage && !deckPage.__jpWaitingForDeckTable) {
         deckPage.__jpWaitingForDeckTable = true
-        console.log('Jackpot+: .deck-table missing, observing .deck-page for deck table...')
+        console.log("Jackpot+: .deck-table missing, observing .deck-page for deck table...")
         const mo = new MutationObserver((mutations, obs) => {
-          if (deckPage.querySelector('.deck-table')) {
+          if (deckPage.querySelector(".deck-table")) {
             obs.disconnect()
             deckPage.__jpWaitingForDeckTable = false
             setTimeout(() => transformDeck(), 50)
@@ -26,9 +25,11 @@ function transformDeck(retryCount = 0) {
         // Safety: stop after 10s
         setTimeout(() => {
           if (deckPage.__jpWaitingForDeckTable) {
-            try { mo.disconnect() } catch (e) {}
+            try {
+              mo.disconnect()
+            } catch (e) {}
             deckPage.__jpWaitingForDeckTable = false
-            console.log('Jackpot+: timed out waiting for .deck-table (10s)')
+            console.log("Jackpot+: timed out waiting for .deck-table (10s)")
           }
         }, 10000)
       } else {
@@ -47,11 +48,11 @@ function transformDeck(retryCount = 0) {
   if (!cardsTrack || cards.length === 0) {
     if (!deckTable.__jpWaitingForCards) {
       deckTable.__jpWaitingForCards = true
-      console.log('Jackpot+: waiting for cards to appear in deckTable (observer)')
+      console.log("Jackpot+: waiting for cards to appear in deckTable (observer)")
 
       const mo = new MutationObserver((mutations, obs) => {
-        const ct = deckTable.querySelector('#cardsTrack')
-        const filled = ct ? ct.querySelectorAll('.card-slot-filled') : []
+        const ct = deckTable.querySelector("#cardsTrack")
+        const filled = ct ? ct.querySelectorAll(".card-slot-filled") : []
         if (ct && filled.length > 0) {
           obs.disconnect()
           deckTable.__jpWaitingForCards = false
@@ -65,9 +66,13 @@ function transformDeck(retryCount = 0) {
       // Safety timeout: give up observing after 5s and log state
       setTimeout(() => {
         if (deckTable.__jpWaitingForCards) {
-          try { mo.disconnect() } catch (e) {}
+          try {
+            mo.disconnect()
+          } catch (e) {}
           deckTable.__jpWaitingForCards = false
-          console.log('Jackpot+: timed out waiting for deck cards (5s), will not retry until next navigation')
+          console.log(
+            "Jackpot+: timed out waiting for deck cards (5s), will not retry until next navigation",
+          )
         }
       }, 5000)
     }
@@ -77,9 +82,45 @@ function transformDeck(retryCount = 0) {
   const listContainer = document.createElement("div")
   listContainer.className = "jackpot-simple-list"
 
+  // Header with title and add button
+  const headerBar = document.createElement("div")
+  headerBar.className = "jp-deck-header"
+
   const title = document.createElement("h2")
   title.textContent = "Your Projects"
-  listContainer.appendChild(title)
+  headerBar.appendChild(title)
+
+  // Find the original Add Project button to clone its functionality
+  const originalAddBtn = document.querySelector('.deck-add-btn, .add-project-btn, button[data-action="add-project"]')
+  
+  const addBtn = document.createElement("button")
+  addBtn.className = "jp-add-project-btn"
+  addBtn.innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 3V13M3 8H13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <span>Add Project</span>
+  `
+  addBtn.addEventListener("click", () => {
+    // Try to click the original add button if it exists
+    if (originalAddBtn) {
+      originalAddBtn.click()
+    } else {
+      // Fallback: look for any button with "Add" text or trigger the modal
+      const addButtons = Array.from(document.querySelectorAll("button")).filter(btn => 
+        btn.textContent.trim().toLowerCase().includes("add") && 
+        btn.textContent.trim().toLowerCase().includes("project")
+      )
+      if (addButtons.length > 0) {
+        addButtons[0].click()
+      } else {
+        console.log("Jackpot+: Could not find original Add Project button")
+      }
+    }
+  })
+  headerBar.appendChild(addBtn)
+
+  listContainer.appendChild(headerBar)
 
   const list = document.createElement("ul")
   list.className = "project-list"
@@ -135,6 +176,12 @@ function transformDeck(retryCount = 0) {
   })
 
   listContainer.appendChild(list)
+
+  // Hide any original Add Project buttons that might be visible
+  const addProjectBtns = document.querySelectorAll('.deck-add-btn, .add-project-btn, button[data-action="add-project"]')
+  addProjectBtns.forEach(btn => {
+    btn.style.display = "none"
+  })
 
   deckTable.parentNode.replaceChild(listContainer, deckTable)
 

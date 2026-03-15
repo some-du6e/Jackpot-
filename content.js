@@ -12,54 +12,76 @@ if (!window.JackpotSettings) {
 
     currentTheme: "plain",
 
+    // Hackatime API key (optional)
+    hackatimeKey: null,
+
+    getHackatimeKey() {
+      return this.hackatimeKey
+    },
+
+    setHackatimeKey(key) {
+      this.hackatimeKey = key || null
+      try {
+        chrome.storage.sync.set({ hackatime_api_key: key }, () => {
+          console.log("Jackpot+: Hackatime API key saved")
+        })
+      } catch (e) {
+        console.warn("Jackpot+: Failed to persist hackatime key", e)
+      }
+    },
+
     getCurrentTheme() {
-      return this.currentTheme;
+      return this.currentTheme
     },
 
     applyTheme(themeName) {
-      if (!this.THEMES[themeName]) return;
+      if (!this.THEMES[themeName]) return
       try {
-        document.documentElement.setAttribute('data-jp-theme', themeName);
-        this.currentTheme = themeName;
-        console.log(`Jackpot+: Applied theme ${themeName}`);
+        document.documentElement.setAttribute("data-jp-theme", themeName)
+        this.currentTheme = themeName
+        console.log(`Jackpot+: Applied theme ${themeName}`)
       } catch (e) {
-        console.warn('Jackpot+: Failed to apply theme', e);
+        console.warn("Jackpot+: Failed to apply theme", e)
       }
     },
 
     async setTheme(themeName) {
       if (!this.THEMES[themeName]) {
-        console.warn(`Jackpot+: Theme '${themeName}' not found`);
-        return false;
+        console.warn(`Jackpot+: Theme '${themeName}' not found`)
+        return false
       }
-      this.applyTheme(themeName);
-      return new Promise((resolve) => {
+      this.applyTheme(themeName)
+      return new Promise(resolve => {
         try {
           chrome.storage.sync.set({ jackpot_plus_theme: themeName }, () => {
-            console.log(`Jackpot+: Theme persisted as ${themeName}`);
-            resolve(true);
-          });
+            console.log(`Jackpot+: Theme persisted as ${themeName}`)
+            resolve(true)
+          })
         } catch (e) {
-          console.warn('Jackpot+: Failed to persist theme', e);
-          resolve(false);
+          console.warn("Jackpot+: Failed to persist theme", e)
+          resolve(false)
         }
-      });
+      })
     },
 
     initSettings() {
-      // Load persisted theme (if any) and apply it
+      // Load persisted theme and Hackatime API key (if any)
       try {
-        chrome.storage.sync.get(['jackpot_plus_theme'], (result) => {
-          const theme = result.jackpot_plus_theme || this.currentTheme || 'plain';
+        chrome.storage.sync.get(["jackpot_plus_theme", "hackatime_api_key"], result => {
+          const theme = result.jackpot_plus_theme || this.currentTheme || "plain"
           if (this.THEMES[theme]) {
-            this.applyTheme(theme);
+            this.applyTheme(theme)
           }
-        });
+          if (result.hackatime_api_key) {
+            this.hackatimeKey = result.hackatime_api_key
+            console.log("Jackpot+: Loaded Hackatime API key from storage")
+          }
+        })
       } catch (e) {
-        console.log('Jackpot+: Settings initialized (no storage available)');
+        console.log("Jackpot+: Settings initialized (no storage available)")
       }
     },
-  };
+  }
 }
 
 // Track current page type to detect navigation changes
@@ -69,22 +91,22 @@ let __jackpotCurrentPage = null
 function addSettingsToDropdown() {
   const dropdown = document.getElementById("profileDropdown")
   if (!dropdown) return
-  
+
   // Check if settings link already exists
   if (dropdown.querySelector(".jp-settings-link")) return
-  
+
   // Create settings link
   const settingsLink = document.createElement("a")
   settingsLink.href = "#"
   settingsLink.className = "dropdown-item jp-settings-link"
   settingsLink.textContent = "⚙️ Settings"
-  settingsLink.addEventListener("click", (e) => {
+  settingsLink.addEventListener("click", e => {
     e.preventDefault()
     e.stopPropagation()
     openSettingsModal()
     dropdown.style.display = "none"
   })
-  
+
   // Insert before Sign Out link
   const signOutLink = dropdown.querySelector('a[href="/signout"]')
   if (signOutLink) {
@@ -118,16 +140,16 @@ function createSettingsModal() {
   modal.id = "jpSettingsModal"
   modal.className = "modal-overlay jp-settings-modal"
   modal.setAttribute("aria-hidden", "true")
-  
+
   const currentTheme = window.JackpotSettings?.getCurrentTheme() || "plain"
   const themes = window.JackpotSettings?.THEMES || {}
-  
+
   let themeOptions = ""
   for (const [key, theme] of Object.entries(themes)) {
     const selected = key === currentTheme ? "selected" : ""
     themeOptions += `<option value="${key}" ${selected}>${theme.name} — ${theme.description}</option>`
   }
-  
+
   modal.innerHTML = `
     <div class="modal-content jp-settings-content" role="dialog" aria-modal="true" aria-labelledby="jpSettingsTitle">
       <div class="modal-header">
@@ -141,6 +163,11 @@ function createSettingsModal() {
             ${themeOptions}
           </select>
           <p class="jp-settings-hint">Choose your preferred visual style</p>
+        </div>
+        <div class="jp-settings-field">
+          <label for="jpHackatimeKey">Hackatime API Key (optional)</label>
+          <input type="text" id="jpHackatimeKey" class="jp-settings-input" placeholder="waka_xxx or API key" />
+          <p class="jp-settings-hint">Optional. Used to show today's coding time in the toolbar.</p>
         </div>
         <div class="jp-settings-preview" id="jpThemePreview">
           <div class="jp-preview-header">Preview</div>
@@ -162,28 +189,29 @@ function createSettingsModal() {
       </div>
     </div>
   `
-  
+
   document.body.appendChild(modal)
-  
+
   // Event listeners
   const closeBtn = modal.querySelector("#jpSettingsClose")
   const cancelBtn = modal.querySelector("#jpSettingsCancel")
   const saveBtn = modal.querySelector("#jpSettingsSave")
   const themeSelect = modal.querySelector("#jpThemeSelect")
-  
+  const hackKeyInput = modal.querySelector("#jpHackatimeKey")
+
   closeBtn.addEventListener("click", closeSettingsModal)
   cancelBtn.addEventListener("click", closeSettingsModal)
-  
+
   // Close on overlay click
-  modal.addEventListener("click", (e) => {
+  modal.addEventListener("click", e => {
     if (e.target === modal) closeSettingsModal()
   })
-  
+
   // Close on Escape
-  document.addEventListener("keydown", (e) => {
+  document.addEventListener("keydown", e => {
     if (e.key === "Escape") closeSettingsModal()
   })
-  
+
   // Preview theme on change
   themeSelect.addEventListener("change", () => {
     const selectedTheme = themeSelect.value
@@ -192,16 +220,34 @@ function createSettingsModal() {
       window.JackpotSettings.setTheme(selectedTheme)
     }
   })
-  
+
   // Save theme
   saveBtn.addEventListener("click", async () => {
     const selectedTheme = themeSelect.value
     if (window.JackpotSettings) {
       await window.JackpotSettings.setTheme(selectedTheme)
     }
+    // Persist hackatime key (optional)
+    if (hackKeyInput) {
+      const key = hackKeyInput.value.trim()
+      window.JackpotSettings.setHackatimeKey(key || null)
+    }
+
+    // Refresh toolbar to pick up new key immediately
+    document.querySelectorAll(".jp-toolbar-stats").forEach(el => el.remove())
+    enhanceToolbar()
     closeSettingsModal()
   })
-  
+
+  // Populate hackatime input with saved value (async)
+  try {
+    chrome.storage.sync.get(["hackatime_api_key"], result => {
+      if (hackKeyInput) hackKeyInput.value = result.hackatime_api_key || ""
+    })
+  } catch (e) {
+    console.warn("Jackpot+: failed to load hackatime key for settings modal", e)
+  }
+
   return modal
 }
 
@@ -222,7 +268,7 @@ function initPage() {
     window.JackpotSettings.initSettings()
     window.__jackpotSettingsInitialized = true
   }
-  
+
   // Remove any previous JP transformations so they can be re-applied
   document.querySelectorAll(".jp-shop-container").forEach(el => el.remove())
   document.querySelectorAll(".jackpot-simple-list").forEach(el => el.remove())
@@ -238,6 +284,11 @@ function initPage() {
     el.style.display = ""
   })
 
+  // Restore Add Project buttons
+  document.querySelectorAll('.deck-add-btn, .add-project-btn, button[data-action="add-project"]').forEach(btn => {
+    btn.style.display = ""
+  })
+
   // Restore original token count
   const tokenCount = document.querySelector(".token-count")
   if (tokenCount) tokenCount.style.display = ""
@@ -247,11 +298,11 @@ function initPage() {
   } else if (document.body.classList.contains("deck-body")) {
     // Use chrome.scripting API via service worker to execute in MAIN world
     // This resets the deckInitialized flag so initDeck() can run again
-    chrome.runtime.sendMessage({ action: "resetDeck" }, (response) => {
+    chrome.runtime.sendMessage({ action: "resetDeck" }, response => {
       if (chrome.runtime.lastError) {
-        console.warn("Jackpot+: resetDeck message failed:", chrome.runtime.lastError.message);
+        console.warn("Jackpot+: resetDeck message failed:", chrome.runtime.lastError.message)
       } else {
-        console.log("Jackpot+: resetDeck response:", response);
+        console.log("Jackpot+: resetDeck response:", response)
       }
       // Wait for initDeck() to run and render the deck table, then transform
       setTimeout(() => transformDeck(), 800)
