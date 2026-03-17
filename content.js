@@ -2,6 +2,131 @@
 // Modules loaded before this: cleanup.js, styles.js, shop.js, toolbar.js, deck.js, settings.js
 console.log("Jackpot+: content script loaded.")
 
+// Prevent duplicate rapid delete clicks (blocks multiple confirm dialogs)
+;(function() {
+  const jpDeleteClicks = new Map()
+  const DEDUPE_WINDOW = 2000 // ms
+
+  document.addEventListener(
+    "click",
+    e => {
+      try {
+        const btn = e.target.closest && e.target.closest(".project-delete-btn")
+        if (!btn) return
+
+        // Identify by project id if available, otherwise by element
+        const key = btn.dataset?.projectId || btn.dataset?.id || btn.id || btn
+        const now = Date.now()
+        const last = jpDeleteClicks.get(key) || 0
+        if (now - last < DEDUPE_WINDOW) {
+          // Block duplicate click propagation to prevent multiple handlers firing
+          e.stopImmediatePropagation()
+          e.preventDefault()
+          console.log("Jackpot+: blocked duplicate delete click")
+          return
+        }
+
+        // Mark this delete click and clear after window
+        jpDeleteClicks.set(key, now)
+        setTimeout(() => jpDeleteClicks.delete(key), DEDUPE_WINDOW + 500)
+      } catch (err) {
+        // Non-fatal
+      }
+    },
+    true,
+  )
+})()
+
+// Network-level dedupe: intercept fetch and XHR to avoid duplicate mutating requests
+;(function() {
+  const pending = new Map()
+  const WINDOW = 2000 // ms
+  const METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"])
+
+  function makeKey(method, url, body) {
+    let b = ""
+    try {
+      if (body === undefined || body === null) b = ""
+      else if (typeof body === "string") b = body
+      else b = JSON.stringify(body)
+    } catch (e) {
+      b = String(body)
+    }
+    return `${method}::${url}::${b}`
+  }
+
+  // Wrap fetch
+  try {
+    const origFetch = window.fetch.bind(window)
+    window.fetch = function(input, init) {
+      try {
+        let url = typeof input === "string" ? input : input?.url
+        let method = (init && init.method) || (input && input.method) || "GET"
+        method = method.toUpperCase()
+        const body = init && init.body ? init.body : null
+
+        if (METHODS.has(method)) {
+          const key = makeKey(method, url, body)
+          const now = Date.now()
+          const rec = pending.get(key)
+          if (rec && now - rec.time < WINDOW) {
+            console.log("Jackpot+: blocked duplicate fetch", method, url)
+            // Return the original promise so callers still resolve
+            return rec.promise.then(res => res.clone && res.clone() || res)
+          }
+
+          const p = origFetch(input, init)
+          pending.set(key, { time: now, promise: p })
+          setTimeout(() => pending.delete(key), WINDOW + 500)
+          return p
+        }
+      } catch (e) {
+        // fallthrough to original
+      }
+      return origFetch(input, init)
+    }
+  } catch (e) {
+    console.warn("Jackpot+: fetch wrap failed", e)
+  }
+
+  // Wrap XHR: store method/url in open, block duplicate send
+  try {
+    const origOpen = XMLHttpRequest.prototype.open
+    const origSend = XMLHttpRequest.prototype.send
+
+    XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
+      this.__jp_method = method ? method.toUpperCase() : "GET"
+      this.__jp_url = url
+      return origOpen.apply(this, arguments)
+    }
+
+    XMLHttpRequest.prototype.send = function(body) {
+      try {
+        const method = (this.__jp_method || "GET").toUpperCase()
+        const url = this.__jp_url || ""
+        if (METHODS.has(method)) {
+          const key = makeKey(method, url, body)
+          const now = Date.now()
+          const rec = pending.get(key)
+          if (rec && now - rec.time < WINDOW) {
+            console.log("Jackpot+: blocked duplicate XHR send", method, url)
+            // Do not send duplicate XHR
+            return
+          }
+          // Mark pending; we don't have a promise here, but preventing duplicates is enough
+          pending.set(key, { time: now, promise: null })
+          setTimeout(() => pending.delete(key), WINDOW + 500)
+        }
+      } catch (e) {
+        // ignore
+      }
+      return origSend.apply(this, arguments)
+    }
+  } catch (e) {
+    console.warn("Jackpot+: XHR wrap failed", e)
+  }
+})()
+
 // Define JackpotSettings with default themes
 if (!window.JackpotSettings) {
   window.JackpotSettings = {
@@ -262,7 +387,18 @@ startInlineOverrideSanitizer()
 injectStyles()
 injectShopIcons()
 
+let __initPageTimeout = null
+let __lastInitPageTime = 0
+
 function initPage() {
+  // Debounce: skip if called within 500ms of last call
+  const now = Date.now()
+  if (now - __lastInitPageTime < 500) {
+    console.log("Jackpot+: initPage debounced (called too soon)")
+    return
+  }
+  __lastInitPageTime = now
+
   // Initialize settings on first load
   if (window.JackpotSettings && !window.__jackpotSettingsInitialized) {
     window.JackpotSettings.initSettings()
@@ -304,8 +440,9 @@ function initPage() {
       } else {
         console.log("Jackpot+: resetDeck response:", response)
       }
-      // Wait for initDeck() to run and render the deck table, then transform
-      setTimeout(() => transformDeck(), 800)
+      // Wait for the site's turbo:load handler to call initDeck() and render cards
+      // initDeck() fetches data from server, so we need more time
+      setTimeout(() => transformDeck(), 2000)
     })
   }
   injectShopIcons()
@@ -362,20 +499,45 @@ const bodyClassObserver = new MutationObserver(mutations => {
 
 bodyClassObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] })
 
-// Watch for deck-table appearing in DOM (faster than polling)
+// Watch for deck-table or cards appearing in DOM
+let __deckTransformPending = false
 const deckTableObserver = new MutationObserver(mutations => {
+  // Skip if we already have a transform or are waiting
+  if (document.querySelector(".jackpot-simple-list") || __deckTransformPending) return
+  
   for (const mutation of mutations) {
+    // Check added nodes
     for (const node of mutation.addedNodes) {
       if (node.nodeType === 1) {
-        // Element node
-        if (node.classList?.contains("deck-table") || node.querySelector?.(".deck-table")) {
-          console.log("Jackpot+: deck-table appeared in DOM, transforming")
-          setTimeout(() => transformDeck(), 100)
+        if (node.classList?.contains("deck-table") || node.querySelector?.(".deck-table") ||
+            node.classList?.contains("card-slot-filled") || node.querySelector?.(".card-slot-filled")) {
+          console.log("Jackpot+: deck content appeared in DOM, transforming")
+          __deckTransformPending = true
+          setTimeout(() => {
+            __deckTransformPending = false
+            transformDeck()
+          }, 200)
           return
         }
         if (node.classList?.contains("shop-right") || node.querySelector?.(".shop-right")) {
           console.log("Jackpot+: shop-right appeared in DOM, transforming")
           setTimeout(() => transformShop(), 100)
+          return
+        }
+      }
+    }
+    // Also check if existing elements got new children (innerHTML change)
+    if (mutation.type === "childList" && mutation.target) {
+      if (mutation.target.classList?.contains("deck-page") || 
+          mutation.target.classList?.contains("deck-table")) {
+        const hasCards = mutation.target.querySelector(".card-slot-filled")
+        if (hasCards && !document.querySelector(".jackpot-simple-list")) {
+          console.log("Jackpot+: cards appeared in deck container, transforming")
+          __deckTransformPending = true
+          setTimeout(() => {
+            __deckTransformPending = false
+            transformDeck()
+          }, 200)
           return
         }
       }
