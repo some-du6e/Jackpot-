@@ -1,0 +1,557 @@
+// Jackpot+ — Shop transformation (visual only, no goal tracking)
+console.log("Jackpot+: shop module loaded.")
+
+function injectShopIcons() {
+  const iconMap = {
+    "Add Prize": "add-prize.svg",
+    "Shop Rules": "shop-rules.svg",
+    Buy: "buy.svg",
+    Generic: "generic.svg",
+    Setup: "setup.svg",
+    Hardware: "hardware.svg",
+    "Las Vegas": "las-vegas.svg",
+  }
+
+  const shopTransformed = document.querySelector(".jp-shop-container")
+  const buttons = document.querySelectorAll("button")
+  buttons.forEach(btn => {
+    const text = btn.textContent.trim()
+    // Skip Add Prize / Shop Rules if shop is transformed (they're in the header now)
+    if (shopTransformed && (text === "Add Prize" || text === "Shop Rules")) return
+
+    const iconFile = iconMap[text]
+    if (iconFile && !btn.querySelector(".jp-icon")) {
+      const img = document.createElement("img")
+      img.src = chrome.runtime.getURL(`icons/${iconFile}`)
+      img.className = "jp-icon"
+      img.style.width = "18px"
+      img.style.height = "18px"
+      img.style.marginRight = "6px"
+      img.style.verticalAlign = "middle"
+      btn.prepend(img)
+    }
+  })
+}
+
+function transformShop(retryCount = 0) {
+  if (!document.body.classList.contains("shop-body")) return
+
+  const shopRight = document.querySelector(".shop-right")
+  if (!shopRight) {
+    if (retryCount < 20) {
+      console.log(`Jackpot+: shop-right not found, retrying (${retryCount + 1}/20)...`)
+      setTimeout(() => transformShop(retryCount + 1), 250)
+    } else {
+      console.log("Jackpot+: shop-right not found after 20 retries, giving up")
+      // Show error state
+      const errorState = document.createElement("div")
+      errorState.className = "jp-error-state"
+      errorState.innerHTML = `
+        <div class="jp-error-state-icon">⚠️</div>
+        <div class="jp-error-state-title">Could not load shop</div>
+        <p class="jp-error-state-text">Try refreshing the page.</p>
+      `
+      document.body.appendChild(errorState)
+    }
+    return
+  }
+
+  if (document.querySelector(".jp-shop-container")) return
+
+  const panels = document.querySelectorAll(".shop-category-panel")
+  const allItems = []
+  const categoryMap = {
+    generic: "Generic",
+    setup: "Setup",
+    hardware: "Hardware",
+    las_vegas: "Las Vegas",
+  }
+
+  panels.forEach(panel => {
+    const category = panel.dataset.shopCategoryPanel || "generic"
+    const cards = panel.querySelectorAll(".shop-card")
+    cards.forEach(card => {
+      const buyBtn = card.querySelector(".shop-buy-btn")
+      if (!buyBtn) return
+      const desc = buyBtn.dataset.itemDesc || ""
+      const dollarMatch = desc.match(/\$(\d+(?:\.\d+)?)/)
+      const dollarAmount = dollarMatch ? `$${dollarMatch[1]}` : ""
+
+      allItems.push({
+        id: buyBtn.dataset.itemId,
+        name: buyBtn.dataset.itemName || "Unknown",
+        price: parseFloat(buyBtn.dataset.itemPrice || "0"),
+        category: category,
+        categoryLabel: categoryMap[category] || category,
+        image: buyBtn.dataset.itemImage || "",
+        desc: desc,
+        dollarAmount: dollarAmount,
+      })
+    })
+  })
+
+  allItems.sort((a, b) => a.price - b.price)
+
+  const container = document.createElement("div")
+  container.className = "jp-shop-container"
+
+  // Shop header with title and action buttons
+  const headerBar = document.createElement("div")
+  headerBar.className = "jp-shop-header"
+
+  const headerTitle = document.createElement("h2")
+  headerTitle.className = "jp-shop-header-title"
+  headerTitle.textContent = "Shop"
+  headerBar.appendChild(headerTitle)
+
+  const headerActions = document.createElement("div")
+  headerActions.className = "jp-shop-header-actions"
+
+  // Grab original Add Prize and Shop Rules buttons
+  const originalButtons = document.querySelectorAll("button")
+  const actionButtonNames = ["Add Prize", "Shop Rules"]
+  const actionButtons = []
+
+  originalButtons.forEach(btn => {
+    const text = btn.textContent.trim()
+    if (actionButtonNames.includes(text)) {
+      actionButtons.push({ text, original: btn })
+    }
+  })
+
+  actionButtons.forEach(({ text, original }) => {
+    const newBtn = document.createElement("button")
+    newBtn.className = "jp-shop-action-btn"
+    newBtn.dataset.action = text.toLowerCase().replace(/\s+/g, "-")
+    newBtn.setAttribute("aria-label", text)
+
+    const iconFile = text === "Add Prize" ? "add-prize.svg" : "shop-rules.svg"
+    const img = document.createElement("img")
+    img.src = chrome.runtime.getURL(`icons/${iconFile}`)
+    img.className = "jp-icon"
+    newBtn.appendChild(img)
+
+    const span = document.createElement("span")
+    span.textContent = text
+    newBtn.appendChild(span)
+
+    newBtn.addEventListener("click", () => original.click())
+
+    headerActions.appendChild(newBtn)
+
+    // Hide the original button
+    original.style.display = "none"
+  })
+
+  headerBar.appendChild(headerActions)
+  container.appendChild(headerBar)
+
+  // Goals section
+  const goalsSection = document.createElement("div")
+  goalsSection.className = "jp-goals-section"
+  container.appendChild(goalsSection)
+
+  // Filter bar
+  const filterBar = document.createElement("div")
+  filterBar.className = "jp-shop-filters"
+
+  const categories = ["all", "generic", "setup", "hardware", "las_vegas"]
+  const categoryLabels = { all: "All", ...categoryMap }
+  const categoryIcons = {
+    all: "buy.svg",
+    generic: "generic.svg",
+    setup: "setup.svg",
+    hardware: "hardware.svg",
+    las_vegas: "las-vegas.svg",
+  }
+
+  categories.forEach(cat => {
+    const btn = document.createElement("button")
+    btn.className = "jp-shop-filter-btn"
+    btn.dataset.filter = cat
+    btn.setAttribute("aria-label", `Filter by ${categoryLabels[cat]}`)
+
+    const img = document.createElement("img")
+    img.src = chrome.runtime.getURL(`icons/${categoryIcons[cat]}`)
+    img.className = "jp-icon"
+    btn.appendChild(img)
+
+    const span = document.createElement("span")
+    span.textContent = categoryLabels[cat]
+    btn.appendChild(span)
+
+    btn.addEventListener("click", () => {
+      const wasActive = btn.classList.contains("jp-shop-filter-active")
+      filterBar
+        .querySelectorAll(".jp-shop-filter-btn")
+        .forEach(b => b.classList.remove("jp-shop-filter-active"))
+
+      const items = container.querySelectorAll(".jp-shop-item")
+      if (wasActive) {
+        items.forEach(item => (item.style.display = ""))
+      } else {
+        btn.classList.add("jp-shop-filter-active")
+        let visibleCount = 0
+        items.forEach(item => {
+          const matches = cat === "all" || item.dataset.category === cat
+          item.style.display = matches ? "" : "none"
+          if (matches) visibleCount++
+        })
+        // Show empty state if no items match filter
+        toggleEmptyState(visibleCount === 0)
+      }
+    })
+
+    filterBar.appendChild(btn)
+  })
+
+  container.appendChild(filterBar)
+
+  // Sort bar
+  const sortBar = document.createElement("div")
+  sortBar.className = "jp-shop-sort"
+
+  const sortLabel = document.createElement("span")
+  sortLabel.className = "jp-shop-sort-label"
+  sortLabel.textContent = "Sort by"
+  sortBar.appendChild(sortLabel)
+
+  const sortSelect = document.createElement("select")
+  sortSelect.className = "jp-shop-sort-select"
+  sortSelect.innerHTML = `
+    <option value="value">Value</option>
+    <option value="price">Price</option>
+  `
+  sortBar.appendChild(sortSelect)
+
+  const sortDirBtn = document.createElement("button")
+  sortDirBtn.className = "jp-shop-sort-dir"
+  sortDirBtn.dataset.dir = "desc"
+  sortDirBtn.textContent = "↓"
+  sortDirBtn.title = "Descending"
+  sortBar.appendChild(sortDirBtn)
+
+  container.appendChild(sortBar)
+
+  // Item grid
+  const grid = document.createElement("div")
+  grid.className = "jp-shop-grid"
+  grid.setAttribute("role", "list")
+  grid.setAttribute("aria-label", "Shop items")
+
+  allItems.forEach((item, index) => {
+    const el = document.createElement("div")
+    el.className = "jp-shop-item"
+    el.dataset.category = item.category
+    el.dataset.price = item.price
+    el.dataset.dollar = item.dollarAmount ? item.dollarAmount.replace("$", "") : "0"
+    el.style.setProperty("--item-index", String(index))
+
+    const hoursAmount = (item.price / 50).toFixed(1)
+    const priceHtml = item.dollarAmount
+      ? item.price.toLocaleString() +
+        ' chips <span class="jp-shop-item-dollar">(' +
+        item.dollarAmount +
+        " / " +
+        hoursAmount +
+        "h)</span>"
+      : item.price.toLocaleString() +
+        ' chips <span class="jp-shop-item-dollar">(' +
+        hoursAmount +
+        "h)</span>"
+
+    el.innerHTML = `
+      <div class="jp-shop-item-card">
+        ${item.image ? `<div class="jp-shop-item-image" style="background-image: url('${item.image}')"></div>` : ""}
+        <div class="jp-shop-item-content">
+          <span class="jp-shop-item-category jp-cat-${item.category}">${item.categoryLabel}</span>
+          <h3 class="jp-shop-item-name">${item.name}</h3>
+          <div class="jp-shop-item-footer">
+            <span class="jp-shop-item-price">${priceHtml}</span>
+            <div class="jp-shop-item-actions">
+              <button class="jp-shop-goal-btn" data-item-id="${item.id}" data-item-price="${item.price}" aria-label="Set as goal">🎯</button>
+              <button class="jp-shop-buy-btn" data-item-id="${item.id}">Buy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `
+
+    el.querySelector(".jp-shop-buy-btn").addEventListener("click", () => {
+      const originalBtn = document.querySelector(`.shop-buy-btn[data-item-id="${item.id}"]`)
+      if (originalBtn) originalBtn.click()
+    })
+
+    // Goal button
+    const goalBtn = el.querySelector(".jp-shop-goal-btn")
+    if (typeof hasGoal === "function" && hasGoal(item.id)) {
+      goalBtn.classList.add("jp-shop-goal-active")
+      goalBtn.title = "Goal set — click to remove"
+    } else {
+      goalBtn.title = "Set as goal"
+    }
+
+    goalBtn.addEventListener("click", () => {
+      if (
+        typeof hasGoal !== "function" ||
+        typeof setGoal !== "function" ||
+        typeof removeGoal !== "function"
+      )
+        return
+
+      if (hasGoal(item.id)) {
+        removeGoal(item.id)
+        goalBtn.classList.remove("jp-shop-goal-active")
+        goalBtn.title = "Set as goal"
+      } else {
+        // Use toolbar hours as the existingHours source (stored in localStorage by toolbar)
+        let existingHoursForItem = 0
+        try {
+          const raw = localStorage.getItem("jackpot_plus_stats")
+          if (raw) {
+            const parsed = JSON.parse(raw)
+            existingHoursForItem = parseFloat(parsed.hours || "0") || 0
+            console.log("Jackpot+: using toolbar hours for existingHoursForItem", {
+              itemId: item.id,
+              name: item.name,
+              existingHoursForItem,
+            })
+          }
+        } catch (e) {
+          console.warn("Jackpot+: could not read toolbar hours from localStorage", e)
+        }
+
+        // Prompt for break days (optional quick input)
+        let breakDays = 0
+        try {
+          const input = prompt(
+            "Break days (days off not counted towards deadline)? Enter a number:",
+            "0",
+          )
+          if (input !== null) {
+            const parsed = parseInt(input, 10)
+            if (!isNaN(parsed) && parsed >= 0) breakDays = parsed
+          }
+        } catch (e) {}
+
+        // If none found for this item, fall back to 0 (user can still set manually later)
+        console.log("Jackpot+: setting goal", {
+          itemId: item.id,
+          name: item.name,
+          price: item.price,
+          breakDays,
+          existingHoursForItem,
+        })
+        setGoal(item.id, item.price, breakDays, existingHoursForItem)
+        goalBtn.classList.add("jp-shop-goal-active")
+        goalBtn.title = "Goal set — click to remove"
+      }
+
+      // Re-render goals section
+      if (typeof renderGoalsSection === "function") {
+        renderGoalsSection(container)
+      }
+    })
+
+    grid.appendChild(el)
+  })
+
+  container.appendChild(grid)
+
+  // Empty state for filters
+  const emptyState = document.createElement("div")
+  emptyState.className = "jp-empty-state"
+  emptyState.style.display = "none"
+  emptyState.innerHTML = `
+    <div class="jp-empty-state-icon">🔍</div>
+    <div class="jp-empty-state-title">No items found</div>
+    <p class="jp-empty-state-text">Try selecting a different category.</p>
+  `
+  container.appendChild(emptyState)
+
+  function toggleEmptyState(show) {
+    emptyState.style.display = show ? "flex" : "none"
+    grid.style.display = show ? "none" : ""
+  }
+
+  // Sort logic
+  function sortItems() {
+    const sortBy = sortSelect.value
+    const dir = sortDirBtn.dataset.dir === "asc" ? 1 : -1
+    const items = Array.from(grid.querySelectorAll(".jp-shop-item"))
+
+    items.sort((a, b) => {
+      const priceA = parseFloat(a.dataset.price)
+      const priceB = parseFloat(b.dataset.price)
+      const dollarA = parseFloat(a.dataset.dollar) || 0
+      const dollarB = parseFloat(b.dataset.dollar) || 0
+
+      if (sortBy === "value") {
+        const valA = dollarA > 0 ? priceA / dollarA : Infinity
+        const valB = dollarB > 0 ? priceB / dollarB : Infinity
+        return (valA - valB) * dir
+      } else {
+        return (priceA - priceB) * dir
+      }
+    })
+
+    items.forEach((item, i) => {
+      item.style.setProperty("--item-index", String(i))
+      grid.appendChild(item)
+    })
+  }
+
+  sortSelect.addEventListener("change", sortItems)
+  sortDirBtn.addEventListener("click", () => {
+    const isAsc = sortDirBtn.dataset.dir === "asc"
+    sortDirBtn.dataset.dir = isAsc ? "desc" : "asc"
+    sortDirBtn.textContent = isAsc ? "↓" : "↑"
+    sortDirBtn.title = isAsc ? "Descending" : "Ascending"
+    sortItems()
+  })
+
+  shopRight.appendChild(container)
+
+  // Render goals section
+  renderGoalsSection(container)
+
+  console.log(`Jackpot+: shop transformed with ${allItems.length} items`)
+}
+
+// Render the goals section
+function renderGoalsSection(container) {
+  const goalsSection = container.querySelector(".jp-goals-section")
+  if (!goalsSection) return
+
+  if (typeof loadGoals !== "function" || typeof getDaysRemaining !== "function") {
+    goalsSection.style.display = "none"
+    return
+  }
+
+  const goals = loadGoals()
+  const goalIds = Object.keys(goals)
+  const totalDays = getDaysRemaining()
+
+  // Get all shop items for name lookup
+  const shopItems = {}
+  container.querySelectorAll(".jp-shop-item").forEach(el => {
+    const btn = el.querySelector(".jp-shop-goal-btn")
+    if (btn) {
+      const id = btn.dataset.itemId
+      const name = el.querySelector(".jp-shop-item-name")?.textContent || "Unknown"
+      shopItems[id] = { name, price: parseFloat(btn.dataset.price || "0") }
+    }
+  })
+
+  if (goalIds.length === 0 && totalDays <= 0) {
+    goalsSection.style.display = "none"
+    return
+  }
+
+  goalsSection.style.display = ""
+
+  let html = `
+    <div class="jp-goals-header">
+      <h3 class="jp-goals-title">🎯 Goals</h3>
+      <div class="jp-deadline-input">
+        <label for="jp-deadline">Deadline:</label>
+        <input type="date" id="jp-deadline" class="jp-deadline-date" />
+        <span class="jp-days-remaining">${totalDays}d left</span>
+      </div>
+    </div>
+  `
+
+  if (goalIds.length === 0) {
+    html += `
+      <div class="jp-goals-empty">
+        <p>No goals set. Click 🎯 on a shop item to set a goal.</p>
+      </div>
+    `
+  } else {
+    html += `<div class="jp-goals-list">`
+    goalIds.forEach(itemId => {
+      const goal = goals[itemId]
+      const item = shopItems[itemId] || { name: itemId, price: goal.price }
+      const hoursPerDay =
+        typeof getHoursPerDay === "function" ? getHoursPerDay(goal, totalDays) : "?"
+      const chipsPerDay =
+        typeof getChipsPerDay === "function" ? getChipsPerDay(goal, totalDays) : "?"
+
+      // Determine progress percent (use hours rather than chips)
+      const hoursDone = goal.existingHours || 0
+      const chipsDone = hoursDone * 50
+      const originalChips =
+        goal.originalPrice && goal.originalPrice > 0 ? goal.originalPrice : goal.price + chipsDone
+      const originalHours = originalChips > 0 ? originalChips / 50 : 0
+      const percent =
+        originalHours > 0 ? Math.min(100, Math.round((hoursDone / originalHours) * 100)) : 0
+
+      // Smart goal display (include break days when present)
+      let statsText = ""
+      const breakTxt =
+        goal.breakDays && goal.breakDays > 0
+          ? ` • ${goal.breakDays} break day${goal.breakDays > 1 ? "s" : ""}`
+          : ""
+      if (goal.existingHours && goal.existingHours > 0) {
+        const originalHours = (originalChips / 50).toFixed(1)
+        const remainingHours = ((goal.price || 0) / 50).toFixed(1)
+        statsText = `${originalHours}h total • ${goal.existingHours}h done • ${remainingHours}h left • ${chipsPerDay}/day${breakTxt}`
+      } else {
+        statsText = `${goal.price.toLocaleString()} chips · ${chipsPerDay}/day · ${hoursPerDay}h/day${breakTxt}`
+      }
+
+      html += `
+        <div class="jp-goal-item" data-item-id="${itemId}">
+          <div class="jp-goal-info">
+            <span class="jp-goal-name">${item.name}</span>
+            <span class="jp-goal-stats">${statsText}</span>
+            <div class="jp-goal-progress-wrap">
+              <div class="jp-goal-progress" style="width: ${percent}%"></div>
+            </div>
+            <div class="jp-goal-progress-text">${percent}%</div>
+          </div>
+          <button class="jp-goal-remove" data-item-id="${itemId}" aria-label="Remove goal">✕</button>
+        </div>
+      `
+    })
+    html += `</div>`
+  }
+
+  goalsSection.innerHTML = html
+
+  // Set deadline input value
+  const deadlineInput = goalsSection.querySelector("#jp-deadline")
+  if (deadlineInput) {
+    const deadline = typeof getDeadline === "function" ? getDeadline() : null
+    if (deadline) {
+      deadlineInput.value = deadline.toISOString().split("T")[0]
+    }
+
+    deadlineInput.addEventListener("change", () => {
+      if (typeof saveDeadline !== "function") return
+      const date = new Date(deadlineInput.value + "T00:00:00")
+      if (!isNaN(date.getTime())) {
+        saveDeadline(date)
+        renderGoalsSection(container)
+      }
+    })
+  }
+
+  // Remove goal buttons
+  goalsSection.querySelectorAll(".jp-goal-remove").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (typeof removeGoal !== "function") return
+      const itemId = btn.dataset.itemId
+      removeGoal(itemId)
+
+      // Update goal button in grid
+      const goalBtn = container.querySelector(`.jp-shop-goal-btn[data-item-id="${itemId}"]`)
+      if (goalBtn) {
+        goalBtn.classList.remove("jp-shop-goal-active")
+        goalBtn.title = "Set as goal"
+      }
+
+      renderGoalsSection(container)
+    })
+  })
+}

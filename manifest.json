@@ -3,9 +3,6 @@
   "name": "Jackpot+",
   "description": "Removes the \"gambling\" theme from jackpot and overall makes the ux better",
   "version": "1.0.0",
-  "background": {
-    "service_worker": "service-worker.js"
-  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "Jackpot+ Settings"
@@ -14,16 +11,14 @@
     {
       "matches": ["https://jackpot.hackclub.com/*"],
       "js": [
-        "components/cleanup.js",
-        "components/styles.js",
-        "components/settings.js",
-        "components/shop.js",
-        "components/toolbar.js",
+        "content.js",
+        "components/goals.js",
         "components/deck.js",
-        "content.js"
+        "components/shop.js",
+        "components/toolbar.js"
       ],
       "css": ["styles.css"],
-      "run_at": "document_idle"
+      "run_at": "document_start"
     }
   ],
   "web_accessible_resources": [

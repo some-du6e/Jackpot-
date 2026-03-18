@@ -1,65 +1,80 @@
-// Jackpot+ — Popup script
+// Jackpot+ — Popup Theme Switcher
 console.log("Jackpot+: popup loaded.")
 
-// Theme options
-const themeOptions = document.querySelectorAll(".theme-option")
+const THEME_KEY = "jp-theme"
 
-// Get current theme from storage
-async function getCurrentTheme() {
-  return new Promise(resolve => {
-    chrome.storage.sync.get(["jackpot_plus_theme"], result => {
-      resolve(result.jackpot_plus_theme || "plain")
-    })
-  })
-}
+// Load saved theme on popup open
+document.addEventListener("DOMContentLoaded", async () => {
+  const result = await chrome.storage.sync.get([THEME_KEY, "hackatime_api_key"])
+  const savedTheme = result[THEME_KEY] || "plain"
+  applyThemeSelection(savedTheme)
 
-// Set theme in storage
-async function setTheme(themeName) {
-  // apply to popup immediately
-  try {
-    document.documentElement.setAttribute("data-jp-theme", themeName)
-  } catch (e) {}
-  return new Promise(resolve => {
-    chrome.storage.sync.set({ jackpot_plus_theme: themeName }, () => {
-      console.log("Jackpot+: Theme set to", themeName)
-      resolve(true)
-    })
-  })
-}
+  // Load API key
+  const apiKey = result.hackatime_api_key || ""
+  const input = document.getElementById("hackatime-api-key")
+  if (input && apiKey) {
+    input.value = apiKey
+  }
+})
 
-// Update UI to reflect selected theme
-function updateSelection(selectedTheme) {
-  themeOptions.forEach(option => {
+// Save API key
+document.getElementById("save-api-key")?.addEventListener("click", async () => {
+  const input = document.getElementById("hackatime-api-key")
+  const status = document.getElementById("api-key-status")
+  const key = input.value.trim()
+
+  await chrome.storage.sync.set({ hackatime_api_key: key })
+
+  if (status) {
+    status.textContent = key ? "Saved!" : "Cleared"
+    setTimeout(() => {
+      status.textContent = ""
+    }, 2000)
+  }
+})
+
+// Handle theme option clicks
+document.querySelectorAll(".theme-option").forEach(option => {
+  option.addEventListener("click", () => {
     const theme = option.dataset.theme
-    if (theme === selectedTheme) {
-      option.classList.add("selected")
-    } else {
-      option.classList.remove("selected")
+    selectTheme(theme)
+  })
+
+  // Keyboard support
+  option.addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault()
+      const theme = option.dataset.theme
+      selectTheme(theme)
     }
-  })
-}
-
-// Initialize popup
-async function initPopup() {
-  const currentTheme = await getCurrentTheme()
-  try {
-    document.documentElement.setAttribute("data-jp-theme", currentTheme)
-  } catch (e) {}
-  updateSelection(currentTheme)
-  console.log("Jackpot+: Current theme:", currentTheme)
-}
-
-// Handle theme selection
-themeOptions.forEach(option => {
-  option.addEventListener("click", async () => {
-    const theme = option.dataset.theme
-    await setTheme(theme)
-    updateSelection(theme)
-    try {
-      document.documentElement.setAttribute("data-jp-theme", theme)
-    } catch (e) {}
   })
 })
 
-// Initialize on load
-initPopup()
+async function selectTheme(theme) {
+  // Save to chrome storage
+  await chrome.storage.sync.set({ [THEME_KEY]: theme })
+
+  // Update UI
+  applyThemeSelection(theme)
+
+  // Notify content scripts to update
+  const tabs = await chrome.tabs.query({ url: "https://jackpot.hackclub.com/*" })
+  tabs.forEach(tab => {
+    chrome.tabs.sendMessage(tab.id, { type: "THEME_CHANGE", theme }).catch(() => {
+      // Tab might not have content script loaded, ignore
+    })
+  })
+
+  console.log("Jackpot+: theme set to", theme)
+}
+
+function applyThemeSelection(theme) {
+  document.querySelectorAll(".theme-option").forEach(opt => {
+    const isSelected = opt.dataset.theme === theme
+    opt.classList.toggle("selected", isSelected)
+    opt.setAttribute("aria-checked", isSelected ? "true" : "false")
+  })
+
+  // Apply theme to popup itself
+  document.documentElement.setAttribute("data-jp-theme", theme)
+}
