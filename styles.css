@@ -28,6 +28,100 @@
   --jp-radius-full: 20px;
 }
 
+/* ── Toolbar: plain, low-visual-noise overrides ───────────────── */
+.toolbar {
+  background: var(--jp-bg-primary) !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid var(--jp-border) !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1200 !important;
+}
+.toolbar .toolbar-bg { display: none !important; }
+.toolbar .toolbar-content {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 8px 16px !important;
+  display: grid !important;
+  grid-template-columns: 1fr auto !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+.nav-links { display: flex !important; gap: 6px !important; align-items: center !important; flex-wrap: nowrap !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; }
+.nav-item {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 6px 10px !important;
+  min-height: 32px !important;
+  min-width: 0 !important;
+  border: 1px solid var(--jp-border) !important;
+  background: var(--jp-bg-primary) !important;
+  color: var(--jp-text-primary) !important;
+  text-decoration: none !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+.nav-item:hover {
+  background: var(--jp-bg-secondary) !important;
+  border-color: var(--jp-border-hover) !important;
+}
+.nav-item.nav-active {
+  background: var(--jp-text-primary) !important;
+  border-color: var(--jp-text-primary) !important;
+  color: #ffffff !important;
+}
+.nav-item:focus-visible {
+  outline: 2px solid rgba(99,102,241,0.18) !important;
+  outline-offset: 2px !important;
+}
+
+/* Tone down goal pill & stats */
+.jp-toolbar-goal-pill {
+  background: var(--jp-bg-secondary) !important;
+  border: none !important;
+  color: var(--jp-text-secondary) !important;
+  padding: 4px 8px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  display: inline-flex !important;
+  gap: 6px !important;
+  align-items: center !important;
+  text-decoration: none !important;
+}
+.jp-toolbar-stats { display: inline-flex; gap: 10px; align-items: center; }
+.jp-toolbar-stats .jp-stat { font-size: 13px; color: var(--jp-text-muted); display: inline-flex; gap:6px; align-items:center; }
+.jp-stat-icon { opacity: 0.9; font-size: 14px; }
+
+/* Avatar sizing */
+.avatar-chip { width: 28px; height: 28px; }
+.avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+
+@media (max-width: 520px) {
+  .nav-links { display: none !important; }
+  .toolbar { height: 56px !important; }
+}
+
+/* Fix overlapping: give nav links room and pin right-side items */
+.toolbar .toolbar-content { gap: 12px !important; }
+.toolbar .nav-links { flex: 1 1 auto !important; min-width: 0 !important; }
+.toolbar-right { display: flex !important; gap: 12px !important; align-items: center !important; flex: 0 0 auto !important; }
+.nav-item { flex: 0 1 auto !important; max-width: 160px !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+
+/* hide scrollbar on WebKit but allow scroll */
+.nav-links::-webkit-scrollbar { height: 6px; display: none; }
+.nav-links { scrollbar-width: none; -ms-overflow-style: none; }
+
+
+
 /* ── Global font override ────────────────────── */
 html,
 body,

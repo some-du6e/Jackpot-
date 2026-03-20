@@ -21,6 +21,10 @@ function loadGoals() {
 function saveGoals(goals) {
   try {
     localStorage.setItem(JP_GOALS_KEY, JSON.stringify(goals))
+    // Notify other parts of the UI in this tab that goals changed
+    try {
+      window.dispatchEvent(new CustomEvent("jp:goals:changed"))
+    } catch (e) {}
   } catch {}
 }
 
@@ -54,6 +58,10 @@ function getDaysRemaining() {
 function saveDeadline(date) {
   try {
     localStorage.setItem(JP_DEADLINE_KEY, date.toISOString())
+    // Deadline affects daily target calculations — notify listeners
+    try {
+      window.dispatchEvent(new CustomEvent("jp:goals:changed"))
+    } catch (e) {}
   } catch {}
 }
 

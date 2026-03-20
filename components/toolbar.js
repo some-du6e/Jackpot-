@@ -18,7 +18,15 @@ function loadStats() {
 
 function saveStats(chips, hours) {
   try {
+    const current = loadStats()
+    const changed = current.chips !== chips || current.hours !== hours
     localStorage.setItem(JP_STATS_KEY, JSON.stringify({ chips, hours }))
+    // Only notify if values actually changed
+    if (changed) {
+      try {
+        window.dispatchEvent(new CustomEvent("jp:stats:changed"))
+      } catch (e) {}
+    }
   } catch {}
 }
 
@@ -187,16 +195,21 @@ function renderHackTimeStat(toolbarRight) {
 
       if (key) {
         try {
-          const res = await fetch("https://hackatime.hackclub.com/api/hackatime/v1/users/current/statusbar/today", {
-            headers: { Authorization: `Bearer ${key}` },
-            cache: "no-cache",
-            credentials: "omit",
-          })
+          const res = await fetch(
+            "https://hackatime.hackclub.com/api/hackatime/v1/users/current/statusbar/today",
+            {
+              headers: { Authorization: `Bearer ${key}` },
+              cache: "no-cache",
+              credentials: "omit",
+            },
+          )
 
           if (res.ok) {
             const data = await res.json()
-            const seconds = (data && data.data && data.data.grand_total && data.data.grand_total.total_seconds) || 0
-            todayHours = (seconds / 3600)
+            const seconds =
+              (data && data.data && data.data.grand_total && data.data.grand_total.total_seconds) ||
+              0
+            todayHours = seconds / 3600
           } else {
             console.warn("Jackpot+: Hackatime fetch failed", res.status)
           }
@@ -206,12 +219,14 @@ function renderHackTimeStat(toolbarRight) {
       }
 
       // Build pill content
-      const goalPill = document.querySelector(".jp-toolbar-goal-pill") || (function() {
-        const p = document.createElement("a")
-        p.href = "/shop"
-        p.className = "jp-toolbar-goal-pill"
-        return p
-      })()
+      const goalPill =
+        document.querySelector(".jp-toolbar-goal-pill") ||
+        (function () {
+          const p = document.createElement("a")
+          p.href = "/shop"
+          p.className = "jp-toolbar-goal-pill"
+          return p
+        })()
 
       const th = targetHours.toFixed(1)
       const dh = todayHours != null ? todayHours.toFixed(1) : "-"
@@ -276,6 +291,115 @@ function renderToolbarGoalPill(toolbarRight) {
   toolbarRight.insertBefore(pill, toolbarRight.firstChild)
 }
 
+// Listen for goal changes (same-tab) and storage changes (other tabs)
+try {
+  window.addEventListener("jp:goals:changed", () => {
+    const toolbarRight = document.querySelector(".toolbar-right")
+    if (toolbarRight) {
+      try {
+        renderToolbarGoalPill(toolbarRight)
+        renderHackTimeStat(toolbarRight)
+      } catch (e) {}
+    } else {
+      // If toolbar not present yet, try to re-run enhancement
+      enhanceToolbar()
+    }
+  })
+} catch (e) {}
+
+// Listen for stats changes to update goal pill
+try {
+  window.addEventListener("jp:stats:changed", () => {
+    const toolbarRight = document.querySelector(".toolbar-right")
+    if (toolbarRight) {
+      try {
+        renderToolbarGoalPill(toolbarRight)
+        renderHackTimeStat(toolbarRight)
+      } catch (e) {}
+    }
+  })
+} catch (e) {}
+
+// Re-run toolbar enhancement on Turbo page loads
+try {
+  document.addEventListener("turbo:load", () => {
+    console.log("Jackpot+: turbo:load — re-enhancing toolbar")
+    enhanceToolbar()
+  })
+} catch (e) {}
+
+// If goals storage changes in another tab/window, refresh toolbar
+window.addEventListener("storage", e => {
+  if (!e.key) return
+  if (e.key === "jackpot_plus_goals" || e.key === "jackpot_plus_deadline" || e.key === "jackpot_plus_stats") {
+    try {
+      enhanceToolbar()
+    } catch (err) {}
+  }
+})
+
+// Refresh stats/goal when user returns to the tab
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") enhanceToolbar()
+})
+
+// Periodically refresh hackatime/goal pill (in case external API or storage updated)
+setInterval(() => {
+  const toolbarRight = document.querySelector(".toolbar-right")
+  if (toolbarRight) {
+    try {
+      renderHackTimeStat(toolbarRight)
+      renderToolbarGoalPill(toolbarRight)
+    } catch (e) {}
+  }
+}, 5 * 60 * 1000) // every 5 minutes
+
 // Initialize toolbar enhancement
 document.addEventListener("turbo:load", () => enhanceToolbar())
 if (document.readyState !== "loading") enhanceToolbar()
+
+// Watch for when token-count or card-slot-filled elements appear/update
+let toolbarObserverTimeout = null
+const toolbarObserver = new MutationObserver(mutations => {
+  let shouldUpdate = false
+  mutations.forEach(mutation => {
+    // Check if token-count changed
+    if (mutation.target.classList?.contains("token-count")) {
+      shouldUpdate = true
+    }
+    // Check if card-slot-filled elements were added
+    if (mutation.addedNodes) {
+      mutation.addedNodes.forEach(node => {
+        if (node.classList?.contains("card-slot-filled") || 
+            node.querySelector?.(".card-slot-filled")) {
+          shouldUpdate = true
+        }
+      })
+    }
+  })
+  if (shouldUpdate) {
+    // Debounce updates to avoid too many re-renders
+    clearTimeout(toolbarObserverTimeout)
+    toolbarObserverTimeout = setTimeout(() => {
+      console.log("Jackpot+: data changed, re-enhancing toolbar")
+      enhanceToolbar()
+    }, 100)
+  }
+})
+
+// Start observing when DOM is ready
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => {
+    toolbarObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    })
+  })
+} else {
+  toolbarObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+    characterData: true
+  })
+}

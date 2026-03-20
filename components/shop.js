@@ -431,6 +431,8 @@ function renderGoalsSection(container) {
   const goals = loadGoals()
   const goalIds = Object.keys(goals)
   const totalDays = getDaysRemaining()
+  
+  console.log("Jackpot+: renderGoalsSection called", { goalIds, totalDays })
 
   // Get all shop items for name lookup
   const shopItems = {}
@@ -477,14 +479,27 @@ function renderGoalsSection(container) {
       const chipsPerDay =
         typeof getChipsPerDay === "function" ? getChipsPerDay(goal, totalDays) : "?"
 
-      // Determine progress percent (use hours rather than chips)
-      const hoursDone = goal.existingHours || 0
-      const chipsDone = hoursDone * 50
-      const originalChips =
-        goal.originalPrice && goal.originalPrice > 0 ? goal.originalPrice : goal.price + chipsDone
-      const originalHours = originalChips > 0 ? originalChips / 50 : 0
+      // Determine progress percent using current toolbar hours
+      let currentTotalHours = 0
+      try {
+        const raw = localStorage.getItem("jackpot_plus_stats")
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          currentTotalHours = parseFloat(parsed.hours || "0") || 0
+        }
+      } catch (e) {}
+      
+      // Calculate progress: how much of the original goal is done
+      // originalPrice is the full price in chips, existingHours was already done when goal was set
+      const originalChips = goal.originalPrice || (goal.price + (goal.existingHours || 0) * 50)
+      const originalHours = originalChips / 50
+      
+      // Progress = current total hours / original hours
+      // existingHours is the hours that were already done when the goal was set
+      // So if existingHours = 11 and currentTotalHours = 12, we've done 1 hour since setting the goal
+      // But the total progress is still currentTotalHours / originalHours
       const percent =
-        originalHours > 0 ? Math.min(100, Math.round((hoursDone / originalHours) * 100)) : 0
+        originalHours > 0 ? Math.min(100, Math.round((currentTotalHours / originalHours) * 100)) : 0
 
       // Smart goal display (include break days when present)
       let statsText = ""
@@ -492,13 +507,18 @@ function renderGoalsSection(container) {
         goal.breakDays && goal.breakDays > 0
           ? ` • ${goal.breakDays} break day${goal.breakDays > 1 ? "s" : ""}`
           : ""
-      if (goal.existingHours && goal.existingHours > 0) {
-        const originalHours = (originalChips / 50).toFixed(1)
-        const remainingHours = ((goal.price || 0) / 50).toFixed(1)
-        statsText = `${originalHours}h total • ${goal.existingHours}h done • ${remainingHours}h left • ${chipsPerDay}/day${breakTxt}`
-      } else {
-        statsText = `${goal.price.toLocaleString()} chips · ${chipsPerDay}/day · ${hoursPerDay}h/day${breakTxt}`
-      }
+      
+      const originalHoursDisplay = (originalChips / 50).toFixed(1)
+      const remainingChips = goal.price || 0
+      const remainingHours = (remainingChips / 50).toFixed(1)
+      // Dollar conversion: $6.00 per hour -> 50 chips = 1 hour => $ per chip
+      const dollarPerChip = 6 / 50
+      const originalDollars = (originalChips * dollarPerChip).toFixed(2)
+      const remainingDollars = (remainingChips * dollarPerChip).toFixed(2)
+      const dollarsPerDay = (chipsPerDay * dollarPerChip).toFixed(2)
+      statsText = `${originalHoursDisplay}h total ($${originalDollars}) • ${currentTotalHours.toFixed(
+        1
+      )}h done • ${remainingHours}h left ($${remainingDollars}) • ${chipsPerDay}/day ($${dollarsPerDay})${breakTxt}`
 
       html += `
         <div class="jp-goal-item" data-item-id="${itemId}">
@@ -555,3 +575,33 @@ function renderGoalsSection(container) {
     })
   })
 }
+
+// Re-render goals section when toolbar stats change
+window.addEventListener("jp:goals:changed", () => {
+  const container = document.querySelector(".jp-shop-container")
+  if (container) {
+    console.log("Jackpot+: jp:goals:changed event received, re-rendering goals section")
+    renderGoalsSection(container)
+  }
+})
+
+// Re-render goals section when stats change
+window.addEventListener("jp:stats:changed", () => {
+  const container = document.querySelector(".jp-shop-container")
+  if (container) {
+    console.log("Jackpot+: jp:stats:changed event received, re-rendering goals section")
+    renderGoalsSection(container)
+  }
+})
+
+// Also listen for storage changes from other tabs
+window.addEventListener("storage", e => {
+  if (!e.key) return
+  if (e.key === "jackpot_plus_goals" || e.key === "jackpot_plus_deadline" || e.key === "jackpot_plus_stats") {
+    const container = document.querySelector(".jp-shop-container")
+    if (container) {
+      console.log("Jackpot+: storage change detected, re-rendering goals section")
+      renderGoalsSection(container)
+    }
+  }
+})
