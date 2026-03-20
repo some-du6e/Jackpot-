@@ -84,21 +84,8 @@
   outline-offset: 2px !important;
 }
 
-/* Tone down goal pill & stats */
-.jp-toolbar-goal-pill {
-  background: var(--jp-bg-secondary) !important;
-  border: none !important;
-  color: var(--jp-text-secondary) !important;
-  padding: 4px 8px !important;
-  border-radius: 8px !important;
-  font-size: 13px !important;
-  display: inline-flex !important;
-  gap: 6px !important;
-  align-items: center !important;
-  text-decoration: none !important;
-}
-.jp-toolbar-stats { display: inline-flex; gap: 10px; align-items: center; }
-.jp-toolbar-stats .jp-stat { font-size: 13px; color: var(--jp-text-muted); display: inline-flex; gap:6px; align-items:center; }
+.jp-toolbar-stats { display: inline-flex; gap: 8px; align-items: center; }
+.jp-toolbar-stats .jp-stat { font-size: 13px; color: var(--jp-text-primary); display: inline-flex; gap:6px; align-items:center; }
 .jp-stat-icon { opacity: 0.9; font-size: 14px; }
 
 /* Avatar sizing */
@@ -986,6 +973,13 @@ body,
   font-variant-numeric: tabular-nums;
 }
 
+.jp-goal-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
 .jp-goal-remove {
   width: 24px;
   height: 24px;
@@ -1007,6 +1001,196 @@ body,
 .jp-goal-remove:hover {
   background: #fee2e2;
   color: #dc2626;
+}
+
+.jp-goal-edit {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: var(--jp-radius-sm);
+  background: transparent;
+  color: var(--jp-text-muted);
+  cursor: pointer;
+  transition:
+    background 200ms var(--jp-ease-out-quart),
+    color 200ms var(--jp-ease-out-quart);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.jp-goal-edit:hover {
+  background: #e0e7ff;
+  color: #4f46e5;
+}
+
+.jp-goal-edit .jp-icon {
+  width: 14px;
+  height: 14px;
+  color: inherit;
+  filter: none;
+  opacity: 1;
+  margin: 0;
+}
+
+/* ── Goal Edit Modal ──────────────────────────────── */
+
+.jp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  animation: jp-modal-fade-in 150ms ease-out forwards;
+}
+
+@keyframes jp-modal-fade-in {
+  to { opacity: 1; }
+}
+
+.jp-modal {
+  background: var(--jp-bg-primary);
+  border-radius: var(--jp-radius-lg);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  padding: 24px;
+  min-width: 320px;
+  max-width: 400px;
+  transform: scale(0.95) translateY(10px);
+  animation: jp-modal-slide-in 200ms ease-out forwards;
+}
+
+@keyframes jp-modal-slide-in {
+  to { transform: scale(1) translateY(0); }
+}
+
+.jp-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.jp-modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--jp-text-primary);
+  margin: 0;
+}
+
+.jp-modal-close {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--jp-radius-sm);
+  background: transparent;
+  color: var(--jp-text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.jp-modal-close:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.jp-modal-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.jp-modal-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.jp-modal-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--jp-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.jp-modal-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--jp-border);
+  border-radius: var(--jp-radius-sm);
+  background: var(--jp-bg-secondary);
+  color: var(--jp-text-primary);
+  font-size: 14px;
+  font-family: var(--jp-font-mono);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.jp-modal-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.jp-modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 24px;
+  justify-content: flex-end;
+}
+
+.jp-modal-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--jp-radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 150ms ease, transform 100ms ease;
+}
+
+.jp-modal-btn:active {
+  transform: scale(0.98);
+}
+
+.jp-modal-btn-cancel {
+  background: var(--jp-bg-secondary);
+  color: var(--jp-text-secondary);
+  border: 1px solid var(--jp-border);
+}
+
+.jp-modal-btn-cancel:hover {
+  background: var(--jp-border);
+}
+
+.jp-modal-btn-save {
+  background: #4f46e5;
+  color: white;
+}
+
+.jp-modal-btn-save:hover {
+  background: #4338ca;
+}
+
+.jp-modal-btn-reset {
+  background: transparent;
+  color: var(--jp-text-muted);
+  border: 1px solid var(--jp-border);
+  margin-right: auto;
+}
+
+.jp-modal-btn-reset:hover {
+  background: var(--jp-bg-secondary);
+  color: var(--jp-text-primary);
 }
 
 /* ── Shop icons ──────────────────────────────── */
@@ -1239,37 +1423,17 @@ body,
   }
 }
 
+/* Goal pill inherits from .jp-stat, only override what's different */
 .jp-toolbar-goal-pill {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: var(--jp-bg-secondary);
-  border: 1.5px solid var(--jp-border);
-  border-radius: var(--jp-radius-md);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--jp-text-primary);
   text-decoration: none;
-  transition: all 200ms var(--jp-ease-out-quart);
 }
 
 .jp-toolbar-goal-pill:hover {
-  background: var(--jp-bg-secondary);
-  border-color: var(--jp-border-hover);
   transform: translateY(-1px);
 }
 
 .jp-toolbar-goal-pill:active {
   transform: translateY(0);
-}
-
-.jp-goal-pill-icon {
-  font-size: 14px;
-}
-
-.jp-goal-pill-text {
-  font-variant-numeric: tabular-nums;
 }
 
 /* Hide original token count when enhanced */

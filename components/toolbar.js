@@ -6,6 +6,7 @@ const JP_STATS_KEY = "jackpot_plus_stats"
 // Track previous values for tick animation
 let prevChips = null
 let prevHours = null
+let prevDollars = null
 
 function loadStats() {
   try {
@@ -106,6 +107,8 @@ function enhanceToolbar(retryCount = 0) {
   }
 
   const hoursStr = totalHours.toFixed(1)
+  // Dollar conversion: $6.00 per hour
+  const dollarsStr = (totalHours * 6).toFixed(2)
 
   saveStats(chipsValue, hoursStr)
 
@@ -114,8 +117,10 @@ function enhanceToolbar(retryCount = 0) {
   if (existing) {
     const chipsEl = existing.querySelector(".jp-chips-stat .jp-stat-value")
     const hoursEl = existing.querySelector(".jp-hours-stat .jp-stat-value")
+    const dollarsEl = existing.querySelector(".jp-dollars-stat .jp-stat-value")
     const chipsChip = existing.querySelector(".jp-chips-stat")
     const hoursChip = existing.querySelector(".jp-hours-stat")
+    const dollarsChip = existing.querySelector(".jp-dollars-stat")
 
     if (chipsEl && chipsValue !== prevChips) {
       tickNumber(chipsEl, prevChips || chipsValue, chipsValue, 500)
@@ -125,9 +130,14 @@ function enhanceToolbar(retryCount = 0) {
       tickNumber(hoursEl, prevHours || hoursStr, hoursStr, 600, "h")
       flashChip(hoursChip)
     }
+    if (dollarsEl && dollarsStr !== prevDollars) {
+      tickNumber(dollarsEl, prevDollars || dollarsStr, dollarsStr, 600)
+      flashChip(dollarsChip)
+    }
 
     prevChips = chipsValue
     prevHours = hoursStr
+    prevDollars = dollarsStr
 
     // Still update goal pill
     renderToolbarGoalPill(toolbarRight)
@@ -138,6 +148,7 @@ function enhanceToolbar(retryCount = 0) {
   // First render — create the stats container
   prevChips = chipsValue
   prevHours = hoursStr
+  prevDollars = dollarsStr
 
   const statsContainer = document.createElement("div")
   statsContainer.className = "jp-toolbar-stats"
@@ -149,6 +160,10 @@ function enhanceToolbar(retryCount = 0) {
     <span class="jp-stat jp-hours-stat">
       <span class="jp-stat-icon">⏱</span>
       <span class="jp-stat-value">${hoursStr}h</span>
+    </span>
+    <span class="jp-stat jp-dollars-stat">
+      <span class="jp-stat-icon">$</span>
+      <span class="jp-stat-value">${dollarsStr}</span>
     </span>
   `
 
@@ -224,21 +239,25 @@ function renderHackTimeStat(toolbarRight) {
         (function () {
           const p = document.createElement("a")
           p.href = "/shop"
-          p.className = "jp-toolbar-goal-pill"
+          p.className = "jp-stat jp-toolbar-goal-pill"
           return p
         })()
 
       const th = targetHours.toFixed(1)
       const dh = todayHours != null ? todayHours.toFixed(1) : "-"
-      goalPill.innerHTML = `<span class="jp-goal-pill-icon">🎯</span><span class="jp-goal-pill-text">${dh}h / ${th}h</span>`
+      goalPill.innerHTML = `<span class="jp-stat-icon">🎯</span><span class="jp-stat-value">${dh}h / ${th}h</span>`
       goalPill.title = `${dh}h done today — target ${th}h/day — click to view shop`
 
-      // Insert at toolbar start
-      const toolbar = toolbarRight
-      const first = toolbar.firstChild
+      // Insert into stats container if it exists
+      const statsContainer = document.querySelector(".jp-toolbar-stats")
       if (!document.querySelector(".jp-toolbar-goal-pill")) {
-        if (first) toolbar.insertBefore(goalPill, first)
-        else toolbar.appendChild(goalPill)
+        if (statsContainer) {
+          statsContainer.appendChild(goalPill)
+        } else {
+          const first = toolbar.firstChild
+          if (first) toolbar.insertBefore(goalPill, first)
+          else toolbar.appendChild(goalPill)
+        }
       }
     })
   } catch (e) {
@@ -275,7 +294,7 @@ function renderToolbarGoalPill(toolbarRight) {
 
   const pill = document.createElement("a")
   pill.href = "/shop"
-  pill.className = "jp-toolbar-goal-pill"
+  pill.className = "jp-stat jp-toolbar-goal-pill"
   pill.title = `${goalIds.length} goal${goalIds.length > 1 ? "s" : ""} set — click to view shop`
 
   if (goalIds.length === 1 && goals[goalIds[0]].price) {
@@ -283,12 +302,18 @@ function renderToolbarGoalPill(toolbarRight) {
     const workingDays = Math.max(totalDays - goal.breakDays, 1)
     const chipsPerDay = Math.ceil(goal.price / workingDays)
     const hoursPerDay = (chipsPerDay / 50).toFixed(1)
-    pill.innerHTML = `<span class="jp-goal-pill-icon">🎯</span><span class="jp-goal-pill-text">${hoursPerDay}h/day</span>`
+    pill.innerHTML = `<span class="jp-stat-icon">🎯</span><span class="jp-stat-value">${hoursPerDay}h/day</span>`
   } else {
-    pill.innerHTML = `<span class="jp-goal-pill-icon">🎯</span><span class="jp-goal-pill-text">${goalIds.length} goals</span>`
+    pill.innerHTML = `<span class="jp-stat-icon">🎯</span><span class="jp-stat-value">${goalIds.length} goals</span>`
   }
 
-  toolbarRight.insertBefore(pill, toolbarRight.firstChild)
+  // Insert into stats container if it exists, otherwise toolbarRight
+  const statsContainer = document.querySelector(".jp-toolbar-stats")
+  if (statsContainer) {
+    statsContainer.appendChild(pill)
+  } else {
+    toolbarRight.insertBefore(pill, toolbarRight.firstChild)
+  }
 }
 
 // Listen for goal changes (same-tab) and storage changes (other tabs)
@@ -331,7 +356,11 @@ try {
 // If goals storage changes in another tab/window, refresh toolbar
 window.addEventListener("storage", e => {
   if (!e.key) return
-  if (e.key === "jackpot_plus_goals" || e.key === "jackpot_plus_deadline" || e.key === "jackpot_plus_stats") {
+  if (
+    e.key === "jackpot_plus_goals" ||
+    e.key === "jackpot_plus_deadline" ||
+    e.key === "jackpot_plus_stats"
+  ) {
     try {
       enhanceToolbar()
     } catch (err) {}
@@ -344,15 +373,18 @@ document.addEventListener("visibilitychange", () => {
 })
 
 // Periodically refresh hackatime/goal pill (in case external API or storage updated)
-setInterval(() => {
-  const toolbarRight = document.querySelector(".toolbar-right")
-  if (toolbarRight) {
-    try {
-      renderHackTimeStat(toolbarRight)
-      renderToolbarGoalPill(toolbarRight)
-    } catch (e) {}
-  }
-}, 5 * 60 * 1000) // every 5 minutes
+setInterval(
+  () => {
+    const toolbarRight = document.querySelector(".toolbar-right")
+    if (toolbarRight) {
+      try {
+        renderHackTimeStat(toolbarRight)
+        renderToolbarGoalPill(toolbarRight)
+      } catch (e) {}
+    }
+  },
+  5 * 60 * 1000,
+) // every 5 minutes
 
 // Initialize toolbar enhancement
 document.addEventListener("turbo:load", () => enhanceToolbar())
@@ -370,8 +402,10 @@ const toolbarObserver = new MutationObserver(mutations => {
     // Check if card-slot-filled elements were added
     if (mutation.addedNodes) {
       mutation.addedNodes.forEach(node => {
-        if (node.classList?.contains("card-slot-filled") || 
-            node.querySelector?.(".card-slot-filled")) {
+        if (
+          node.classList?.contains("card-slot-filled") ||
+          node.querySelector?.(".card-slot-filled")
+        ) {
           shouldUpdate = true
         }
       })
@@ -393,13 +427,13 @@ if (document.readyState === "loading") {
     toolbarObserver.observe(document.body, {
       childList: true,
       subtree: true,
-      characterData: true
+      characterData: true,
     })
   })
 } else {
   toolbarObserver.observe(document.body, {
     childList: true,
     subtree: true,
-    characterData: true
+    characterData: true,
   })
 }

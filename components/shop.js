@@ -431,7 +431,7 @@ function renderGoalsSection(container) {
   const goals = loadGoals()
   const goalIds = Object.keys(goals)
   const totalDays = getDaysRemaining()
-  
+
   console.log("Jackpot+: renderGoalsSection called", { goalIds, totalDays })
 
   // Get all shop items for name lookup
@@ -488,12 +488,12 @@ function renderGoalsSection(container) {
           currentTotalHours = parseFloat(parsed.hours || "0") || 0
         }
       } catch (e) {}
-      
+
       // Calculate progress: how much of the original goal is done
       // originalPrice is the full price in chips, existingHours was already done when goal was set
-      const originalChips = goal.originalPrice || (goal.price + (goal.existingHours || 0) * 50)
+      const originalChips = goal.originalPrice || goal.price + (goal.existingHours || 0) * 50
       const originalHours = originalChips / 50
-      
+
       // Progress = current total hours / original hours
       // existingHours is the hours that were already done when the goal was set
       // So if existingHours = 11 and currentTotalHours = 12, we've done 1 hour since setting the goal
@@ -507,7 +507,7 @@ function renderGoalsSection(container) {
         goal.breakDays && goal.breakDays > 0
           ? ` • ${goal.breakDays} break day${goal.breakDays > 1 ? "s" : ""}`
           : ""
-      
+
       const originalHoursDisplay = (originalChips / 50).toFixed(1)
       const remainingChips = goal.price || 0
       const remainingHours = (remainingChips / 50).toFixed(1)
@@ -517,7 +517,7 @@ function renderGoalsSection(container) {
       const remainingDollars = (remainingChips * dollarPerChip).toFixed(2)
       const dollarsPerDay = (chipsPerDay * dollarPerChip).toFixed(2)
       statsText = `${originalHoursDisplay}h total ($${originalDollars}) • ${currentTotalHours.toFixed(
-        1
+        1,
       )}h done • ${remainingHours}h left ($${remainingDollars}) • ${chipsPerDay}/day ($${dollarsPerDay})${breakTxt}`
 
       html += `
@@ -530,7 +530,12 @@ function renderGoalsSection(container) {
             </div>
             <div class="jp-goal-progress-text">${percent}%</div>
           </div>
-          <button class="jp-goal-remove" data-item-id="${itemId}" aria-label="Remove goal">✕</button>
+          <div class="jp-goal-actions">
+            <button class="jp-goal-edit" data-item-id="${itemId}" aria-label="Edit goal">
+              <svg class="jp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+            </button>
+            <button class="jp-goal-remove" data-item-id="${itemId}" aria-label="Remove goal">✕</button>
+          </div>
         </div>
       `
     })
@@ -574,6 +579,119 @@ function renderGoalsSection(container) {
       renderGoalsSection(container)
     })
   })
+
+    // Edit goal buttons (edit price via modal)
+    goalsSection.querySelectorAll(".jp-goal-edit").forEach(btn => {
+      btn.addEventListener("click", () => {
+        if (typeof loadGoals !== "function" || typeof saveGoals !== "function") return
+        const itemId = btn.dataset.itemId
+        const goals = loadGoals()
+        const goal = goals[itemId]
+        if (!goal) return
+
+        const itemName = container.querySelector(`.jp-goal-item[data-item-id="${itemId}"] .jp-goal-name`)?.textContent || itemId
+        const currentChips = goal.price || 0
+        const currentHours = currentChips / 50
+        const currentDollars = currentHours * 6
+
+        // Get original shop item price for reset
+        const goalBtnInGrid = container.querySelector(`.jp-shop-goal-btn[data-item-id="${itemId}"]`)
+        let originalShopChips = currentChips
+        if (goalBtnInGrid) {
+          originalShopChips = parseFloat(goalBtnInGrid.dataset.itemPrice || goalBtnInGrid.dataset.price || currentChips)
+        }
+        const originalShopHours = originalShopChips / 50
+        const originalShopDollars = originalShopHours * 6
+
+        // Create modal
+        const overlay = document.createElement("div")
+        overlay.className = "jp-modal-overlay"
+        overlay.innerHTML = `
+          <div class="jp-modal">
+            <div class="jp-modal-header">
+              <h3 class="jp-modal-title">Edit: ${itemName}</h3>
+              <button class="jp-modal-close" aria-label="Close">✕</button>
+            </div>
+            <div class="jp-modal-inputs">
+              <div class="jp-modal-input-group">
+                <label class="jp-modal-label">Hours</label>
+                <input type="number" class="jp-modal-input" id="jp-edit-hours" value="${currentHours.toFixed(1)}" step="0.1" min="0" />
+              </div>
+              <div class="jp-modal-input-group">
+                <label class="jp-modal-label">Dollars ($6/h)</label>
+                <input type="number" class="jp-modal-input" id="jp-edit-dollars" value="${currentDollars.toFixed(2)}" step="0.01" min="0" />
+              </div>
+              <div class="jp-modal-input-group">
+                <label class="jp-modal-label">Chips (50/h)</label>
+                <input type="number" class="jp-modal-input" id="jp-edit-chips" value="${currentChips}" step="1" min="0" />
+              </div>
+            </div>
+            <div class="jp-modal-actions">
+              <button class="jp-modal-btn jp-modal-btn-reset" title="Reset to shop price">↺ Reset</button>
+              <button class="jp-modal-btn jp-modal-btn-cancel">Cancel</button>
+              <button class="jp-modal-btn jp-modal-btn-save">Save</button>
+            </div>
+          </div>
+        `
+
+        const hoursInput = overlay.querySelector("#jp-edit-hours")
+        const dollarsInput = overlay.querySelector("#jp-edit-dollars")
+        const chipsInput = overlay.querySelector("#jp-edit-chips")
+        const closeBtn = overlay.querySelector(".jp-modal-close")
+        const cancelBtn = overlay.querySelector(".jp-modal-btn-cancel")
+        const saveBtn = overlay.querySelector(".jp-modal-btn-save")
+        const resetBtn = overlay.querySelector(".jp-modal-btn-reset")
+
+        // Linked inputs - update others when one changes
+        hoursInput.addEventListener("input", () => {
+          const h = parseFloat(hoursInput.value) || 0
+          dollarsInput.value = (h * 6).toFixed(2)
+          chipsInput.value = Math.round(h * 50)
+        })
+
+        dollarsInput.addEventListener("input", () => {
+          const d = parseFloat(dollarsInput.value) || 0
+          hoursInput.value = (d / 6).toFixed(1)
+          chipsInput.value = Math.round((d / 6) * 50)
+        })
+
+        chipsInput.addEventListener("input", () => {
+          const c = parseFloat(chipsInput.value) || 0
+          hoursInput.value = (c / 50).toFixed(1)
+          dollarsInput.value = ((c / 50) * 6).toFixed(2)
+        })
+
+        const closeModal = () => overlay.remove()
+        closeBtn.addEventListener("click", closeModal)
+        cancelBtn.addEventListener("click", closeModal)
+        overlay.addEventListener("click", e => { if (e.target === overlay) closeModal() })
+
+        // Reset to original shop price
+        resetBtn.addEventListener("click", () => {
+          hoursInput.value = originalShopHours.toFixed(1)
+          dollarsInput.value = originalShopDollars.toFixed(2)
+          chipsInput.value = originalShopChips
+        })
+
+        saveBtn.addEventListener("click", () => {
+          const newChips = Math.round(parseFloat(chipsInput.value) || 0)
+          goal.price = newChips
+          goal.originalPrice = newChips
+          goal.existingHours = 0
+          saveGoals(goals)
+
+          const goalBtn = container.querySelector(`.jp-shop-goal-btn[data-item-id="${itemId}"]`)
+          if (goalBtn) goalBtn.dataset.price = newChips
+
+          closeModal()
+          renderGoalsSection(container)
+        })
+
+        document.body.appendChild(overlay)
+        hoursInput.focus()
+        hoursInput.select()
+      })
+    })
 }
 
 // Re-render goals section when toolbar stats change
@@ -597,7 +715,11 @@ window.addEventListener("jp:stats:changed", () => {
 // Also listen for storage changes from other tabs
 window.addEventListener("storage", e => {
   if (!e.key) return
-  if (e.key === "jackpot_plus_goals" || e.key === "jackpot_plus_deadline" || e.key === "jackpot_plus_stats") {
+  if (
+    e.key === "jackpot_plus_goals" ||
+    e.key === "jackpot_plus_deadline" ||
+    e.key === "jackpot_plus_stats"
+  ) {
     const container = document.querySelector(".jp-shop-container")
     if (container) {
       console.log("Jackpot+: storage change detected, re-rendering goals section")
