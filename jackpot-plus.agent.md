@@ -19,6 +19,7 @@ Specialized agent for the Jackpot+ browser extension project.
 **Tech stack**: Vanilla JS, CSS custom properties for theming, Chrome Extension Manifest V3.
 
 **Key files**:
+
 - `popup.html` / `popup.js` / `popup.css` — Extension settings popup
 - `manifest.json` — Extension config (content scripts, permissions, web accessible resources)
 - `content.js` — Main content script entry point
