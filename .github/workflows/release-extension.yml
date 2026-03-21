@@ -49,9 +49,12 @@ jobs:
 
           New-Item -ItemType Directory -Path dist | Out-Null
 
-          $include = @('manifest.json', 'icons')
-          Get-ChildItem -File -Filter '*.js' | ForEach-Object { $include += $_.Name }
+          $exclude = @('README*', 'readme*', 'agents.md', 'jackpot-plus.agent.md', 'agentstuff')
+          Get-ChildItem -File -Filter '*.js' | Where-Object { $exclude -notcontains $_.Name } | ForEach-Object {
+            Copy-Item $_.Name -Destination dist -Force
+          }
 
+          $include = @('manifest.json', 'icons')
           foreach ($item in $include) {
             if (Test-Path $item) {
               Copy-Item $item -Destination dist -Recurse -Force

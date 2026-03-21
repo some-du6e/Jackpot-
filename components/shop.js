@@ -1,204 +1,5 @@
-// Jackpot+ — Shop transformation and icon injection
+// Jackpot+ — Shop transformation (visual only, no goal tracking)
 console.log("Jackpot+: shop module loaded.")
-
-const JP_GOALS_KEY = "jackpot_plus_goals"
-const JP_EVENT_END = new Date("2026-05-08T23:59:59")
-
-function loadGoals() {
-  try {
-    const raw = localStorage.getItem(JP_GOALS_KEY)
-    return raw ? JSON.parse(raw) : {}
-  } catch {
-    return {}
-  }
-}
-
-function saveGoals(goals) {
-  try {
-    localStorage.setItem(JP_GOALS_KEY, JSON.stringify(goals))
-  } catch {}
-}
-
-function getDaysRemaining() {
-  const now = new Date()
-  const diff = JP_EVENT_END - now
-  if (diff <= 0) return 0
-  return Math.ceil(diff / 86400000)
-}
-
-function createGoalModal(item, existingGoal, onSave, onRemove) {
-  const totalDays = getDaysRemaining()
-  const isEventOver = totalDays <= 0
-
-  const modal = document.createElement("div")
-  modal.className = "modal-overlay jp-goal-modal"
-  modal.setAttribute("aria-hidden", "true")
-
-  const savedBreakDays = existingGoal ? existingGoal.breakDays : 0
-  const workingDays = Math.max(totalDays - savedBreakDays, 1)
-  const chipsPerDay = Math.ceil(item.price / workingDays)
-  const hoursPerDay = (chipsPerDay / 50).toFixed(1)
-
-  modal.innerHTML = `
-    <div class="modal-content jp-goal-modal-content" role="dialog" aria-modal="true">
-      <div class="modal-header">
-        <h3 class="modal-title">🎯 Set Goal</h3>
-        <button type="button" class="modal-close jp-goal-close" aria-label="Close">×</button>
-      </div>
-      <div class="jp-goal-body">
-        <div class="jp-goal-item-info">
-          <div class="jp-goal-item-name">${item.name}</div>
-          <div class="jp-goal-item-price">${item.price.toLocaleString()} chips${item.dollarAmount ? ` (${item.dollarAmount})` : ""}</div>
-        </div>
-
-        <div class="jp-goal-stats-grid">
-          <div class="jp-goal-stat">
-            <span class="jp-goal-stat-label">Event ends</span>
-            <span class="jp-goal-stat-value">May 8, 2026</span>
-          </div>
-          <div class="jp-goal-stat">
-            <span class="jp-goal-stat-label">Days left</span>
-            <span class="jp-goal-stat-value">${isEventOver ? "Ended" : totalDays}</span>
-          </div>
-        </div>
-
-        ${
-          isEventOver
-            ? `<div class="jp-goal-ended">The event has ended. Goals are no longer available.</div>`
-            : `
-        <div class="project-form-field">
-          <label for="jpGoalBreakDays">Break days (days you won't work)</label>
-          <input type="number" id="jpGoalBreakDays" class="jp-goal-input" min="0" max="${totalDays - 1}" value="${savedBreakDays}" />
-          <p class="jp-settings-hint">Weekends, holidays, rest days — anything where you won't log hours</p>
-        </div>
-
-        <div class="jp-goal-calculation">
-          <div class="jp-goal-calc-row">
-            <span class="jp-goal-calc-label">Working days</span>
-            <span class="jp-goal-calc-value" id="jpGoalWorkingDays">${workingDays}</span>
-          </div>
-          <div class="jp-goal-calc-row">
-            <span class="jp-goal-calc-label">Chips per day</span>
-            <span class="jp-goal-calc-value" id="jpGoalChipsPerDay">${chipsPerDay.toLocaleString()}</span>
-          </div>
-          <div class="jp-goal-calc-row jp-goal-calc-highlight">
-            <span class="jp-goal-calc-label">⚡ Hours per day</span>
-            <span class="jp-goal-calc-value" id="jpGoalHoursPerDay">${hoursPerDay}h</span>
-          </div>
-        </div>
-        `
-        }
-      </div>
-      <div class="project-form-actions">
-        ${existingGoal ? `<button type="button" class="project-delete-btn jp-goal-remove">Remove Goal</button>` : `<div></div>`}
-        <div style="display:flex;gap:8px;">
-          <button type="button" class="project-cancel-btn jp-goal-cancel">Cancel</button>
-          ${isEventOver ? "" : `<button type="button" class="project-save-btn jp-goal-save">Save Goal</button>`}
-        </div>
-      </div>
-    </div>
-  `
-
-  document.body.appendChild(modal)
-
-  // Animate in
-  requestAnimationFrame(() => {
-    modal.classList.add("active")
-    modal.setAttribute("aria-hidden", "false")
-  })
-
-  function close() {
-    modal.classList.remove("active")
-    modal.setAttribute("aria-hidden", "true")
-    setTimeout(() => modal.remove(), 300)
-  }
-
-  // Event listeners
-  modal.querySelector(".jp-goal-close").addEventListener("click", close)
-  modal.querySelector(".jp-goal-cancel").addEventListener("click", close)
-  modal.addEventListener("click", e => {
-    if (e.target === modal) close()
-  })
-
-  const escHandler = e => {
-    if (e.key === "Escape") {
-      close()
-      document.removeEventListener("keydown", escHandler)
-    }
-  }
-  document.addEventListener("keydown", escHandler)
-
-  if (!isEventOver) {
-    const breakDaysInput = modal.querySelector("#jpGoalBreakDays")
-    breakDaysInput.addEventListener("input", () => {
-      let breakDays = parseInt(breakDaysInput.value) || 0
-      breakDays = Math.max(0, Math.min(breakDays, totalDays - 1))
-      const wd = Math.max(totalDays - breakDays, 1)
-      const cpd = Math.ceil(item.price / wd)
-      const hpd = (cpd / 50).toFixed(1)
-      modal.querySelector("#jpGoalWorkingDays").textContent = wd
-      modal.querySelector("#jpGoalChipsPerDay").textContent = cpd.toLocaleString()
-      modal.querySelector("#jpGoalHoursPerDay").textContent = hpd + "h"
-    })
-
-    modal.querySelector(".jp-goal-save").addEventListener("click", () => {
-      const breakDays = Math.max(0, Math.min(parseInt(breakDaysInput.value) || 0, totalDays - 1))
-      onSave(breakDays)
-      close()
-    })
-  }
-
-  const removeBtn = modal.querySelector(".jp-goal-remove")
-  if (removeBtn) {
-    removeBtn.addEventListener("click", () => {
-      onRemove()
-      close()
-    })
-  }
-}
-
-function renderGoalBanner(container, allItems) {
-  const existing = container.querySelector(".jp-shop-goal-banner")
-  if (existing) existing.remove()
-
-  const goals = loadGoals()
-  const goalIds = Object.keys(goals)
-  if (goalIds.length === 0) return
-
-  const totalDays = getDaysRemaining()
-  if (totalDays <= 0) return
-
-  const banner = document.createElement("div")
-  banner.className = "jp-shop-goal-banner"
-
-  let bannerHtml = `<div class="jp-goal-banner-header">
-    <span class="jp-goal-banner-icon">🎯</span>
-    <span class="jp-goal-banner-title">Your Goals</span>
-  </div>
-  <div class="jp-goal-banner-items">`
-
-  goalIds.forEach(itemId => {
-    const item = allItems.find(i => i.id === itemId)
-    if (!item) return
-    const goal = goals[itemId]
-    const workingDays = Math.max(totalDays - goal.breakDays, 1)
-    const chipsPerDay = Math.ceil(item.price / workingDays)
-    const hoursPerDay = (chipsPerDay / 50).toFixed(1)
-
-    bannerHtml += `
-      <div class="jp-goal-banner-item">
-        <span class="jp-goal-banner-item-name">${item.name}</span>
-        <span class="jp-goal-banner-item-target">${hoursPerDay}h/day · ${workingDays} working days</span>
-      </div>
-    `
-  })
-
-  bannerHtml += `</div>`
-  banner.innerHTML = bannerHtml
-
-  // Insert at the very top of the container
-  container.prepend(banner)
-}
 
 function injectShopIcons() {
   const iconMap = {
@@ -242,6 +43,15 @@ function transformShop(retryCount = 0) {
       setTimeout(() => transformShop(retryCount + 1), 250)
     } else {
       console.log("Jackpot+: shop-right not found after 20 retries, giving up")
+      // Show error state
+      const errorState = document.createElement("div")
+      errorState.className = "jp-error-state"
+      errorState.innerHTML = `
+        <div class="jp-error-state-icon">⚠️</div>
+        <div class="jp-error-state-title">Could not load shop</div>
+        <p class="jp-error-state-text">Try refreshing the page.</p>
+      `
+      document.body.appendChild(errorState)
     }
     return
   }
@@ -313,6 +123,7 @@ function transformShop(retryCount = 0) {
     const newBtn = document.createElement("button")
     newBtn.className = "jp-shop-action-btn"
     newBtn.dataset.action = text.toLowerCase().replace(/\s+/g, "-")
+    newBtn.setAttribute("aria-label", text)
 
     const iconFile = text === "Add Prize" ? "add-prize.svg" : "shop-rules.svg"
     const img = document.createElement("img")
@@ -325,6 +136,7 @@ function transformShop(retryCount = 0) {
     newBtn.appendChild(span)
 
     newBtn.addEventListener("click", () => original.click())
+
     headerActions.appendChild(newBtn)
 
     // Hide the original button
@@ -334,6 +146,12 @@ function transformShop(retryCount = 0) {
   headerBar.appendChild(headerActions)
   container.appendChild(headerBar)
 
+  // Goals section
+  const goalsSection = document.createElement("div")
+  goalsSection.className = "jp-goals-section"
+  container.appendChild(goalsSection)
+
+  // Filter bar
   const filterBar = document.createElement("div")
   filterBar.className = "jp-shop-filters"
 
@@ -351,6 +169,7 @@ function transformShop(retryCount = 0) {
     const btn = document.createElement("button")
     btn.className = "jp-shop-filter-btn"
     btn.dataset.filter = cat
+    btn.setAttribute("aria-label", `Filter by ${categoryLabels[cat]}`)
 
     const img = document.createElement("img")
     img.src = chrome.runtime.getURL(`icons/${categoryIcons[cat]}`)
@@ -372,9 +191,14 @@ function transformShop(retryCount = 0) {
         items.forEach(item => (item.style.display = ""))
       } else {
         btn.classList.add("jp-shop-filter-active")
+        let visibleCount = 0
         items.forEach(item => {
-          item.style.display = cat === "all" || item.dataset.category === cat ? "" : "none"
+          const matches = cat === "all" || item.dataset.category === cat
+          item.style.display = matches ? "" : "none"
+          if (matches) visibleCount++
         })
+        // Show empty state if no items match filter
+        toggleEmptyState(visibleCount === 0)
       }
     })
 
@@ -383,6 +207,7 @@ function transformShop(retryCount = 0) {
 
   container.appendChild(filterBar)
 
+  // Sort bar
   const sortBar = document.createElement("div")
   sortBar.className = "jp-shop-sort"
 
@@ -408,8 +233,11 @@ function transformShop(retryCount = 0) {
 
   container.appendChild(sortBar)
 
+  // Item grid
   const grid = document.createElement("div")
   grid.className = "jp-shop-grid"
+  grid.setAttribute("role", "list")
+  grid.setAttribute("aria-label", "Shop items")
 
   allItems.forEach((item, index) => {
     const el = document.createElement("div")
@@ -432,29 +260,16 @@ function transformShop(retryCount = 0) {
         hoursAmount +
         "h)</span>"
 
-    const goals = loadGoals()
-    const isGoal = !!goals[item.id]
-    const totalDays = getDaysRemaining()
-    let goalBadgeHtml = ""
-    if (isGoal && totalDays > 0) {
-      const goal = goals[item.id]
-      const workingDays = Math.max(totalDays - goal.breakDays, 1)
-      const chipsPerDay = Math.ceil(item.price / workingDays)
-      const hoursPerDay = (chipsPerDay / 50).toFixed(1)
-      goalBadgeHtml = `<span class="jp-item-goal-badge">🎯 ${hoursPerDay}h/day</span>`
-    }
-
     el.innerHTML = `
       <div class="jp-shop-item-card">
         ${item.image ? `<div class="jp-shop-item-image" style="background-image: url('${item.image}')"></div>` : ""}
         <div class="jp-shop-item-content">
           <span class="jp-shop-item-category jp-cat-${item.category}">${item.categoryLabel}</span>
           <h3 class="jp-shop-item-name">${item.name}</h3>
-          ${goalBadgeHtml}
           <div class="jp-shop-item-footer">
             <span class="jp-shop-item-price">${priceHtml}</span>
             <div class="jp-shop-item-actions">
-              <button class="jp-shop-star-btn ${isGoal ? "starred" : ""}" data-item-id="${item.id}" title="${isGoal ? "Edit goal" : "Set as goal"}">⭐</button>
+              <button class="jp-shop-goal-btn" data-item-id="${item.id}" data-item-price="${item.price}" aria-label="Set as goal">🎯</button>
               <button class="jp-shop-buy-btn" data-item-id="${item.id}">Buy</button>
             </div>
           </div>
@@ -467,30 +282,75 @@ function transformShop(retryCount = 0) {
       if (originalBtn) originalBtn.click()
     })
 
-    el.querySelector(".jp-shop-star-btn").addEventListener("click", () => {
-      const currentGoals = loadGoals()
-      const existingGoal = currentGoals[item.id] || null
-      createGoalModal(
-        item,
-        existingGoal,
-        breakDays => {
-          const updatedGoals = loadGoals()
-          updatedGoals[item.id] = { breakDays, price: item.price, name: item.name, savedAt: new Date().toISOString() }
-          saveGoals(updatedGoals)
-          // Re-render the shop to reflect changes
-          const existingContainer = document.querySelector(".jp-shop-container")
-          if (existingContainer) existingContainer.remove()
-          transformShop()
-        },
-        () => {
-          const updatedGoals = loadGoals()
-          delete updatedGoals[item.id]
-          saveGoals(updatedGoals)
-          const existingContainer = document.querySelector(".jp-shop-container")
-          if (existingContainer) existingContainer.remove()
-          transformShop()
-        }
+    // Goal button
+    const goalBtn = el.querySelector(".jp-shop-goal-btn")
+    if (typeof hasGoal === "function" && hasGoal(item.id)) {
+      goalBtn.classList.add("jp-shop-goal-active")
+      goalBtn.title = "Goal set — click to remove"
+    } else {
+      goalBtn.title = "Set as goal"
+    }
+
+    goalBtn.addEventListener("click", () => {
+      if (
+        typeof hasGoal !== "function" ||
+        typeof setGoal !== "function" ||
+        typeof removeGoal !== "function"
       )
+        return
+
+      if (hasGoal(item.id)) {
+        removeGoal(item.id)
+        goalBtn.classList.remove("jp-shop-goal-active")
+        goalBtn.title = "Set as goal"
+      } else {
+        // Use toolbar hours as the existingHours source (stored in localStorage by toolbar)
+        let existingHoursForItem = 0
+        try {
+          const raw = localStorage.getItem("jackpot_plus_stats")
+          if (raw) {
+            const parsed = JSON.parse(raw)
+            existingHoursForItem = parseFloat(parsed.hours || "0") || 0
+            console.log("Jackpot+: using toolbar hours for existingHoursForItem", {
+              itemId: item.id,
+              name: item.name,
+              existingHoursForItem,
+            })
+          }
+        } catch (e) {
+          console.warn("Jackpot+: could not read toolbar hours from localStorage", e)
+        }
+
+        // Prompt for break days (optional quick input)
+        let breakDays = 0
+        try {
+          const input = prompt(
+            "Break days (days off not counted towards deadline)? Enter a number:",
+            "0",
+          )
+          if (input !== null) {
+            const parsed = parseInt(input, 10)
+            if (!isNaN(parsed) && parsed >= 0) breakDays = parsed
+          }
+        } catch (e) {}
+
+        // If none found for this item, fall back to 0 (user can still set manually later)
+        console.log("Jackpot+: setting goal", {
+          itemId: item.id,
+          name: item.name,
+          price: item.price,
+          breakDays,
+          existingHoursForItem,
+        })
+        setGoal(item.id, item.price, breakDays, existingHoursForItem)
+        goalBtn.classList.add("jp-shop-goal-active")
+        goalBtn.title = "Goal set — click to remove"
+      }
+
+      // Re-render goals section
+      if (typeof renderGoalsSection === "function") {
+        renderGoalsSection(container)
+      }
     })
 
     grid.appendChild(el)
@@ -498,6 +358,23 @@ function transformShop(retryCount = 0) {
 
   container.appendChild(grid)
 
+  // Empty state for filters
+  const emptyState = document.createElement("div")
+  emptyState.className = "jp-empty-state"
+  emptyState.style.display = "none"
+  emptyState.innerHTML = `
+    <div class="jp-empty-state-icon">🔍</div>
+    <div class="jp-empty-state-title">No items found</div>
+    <p class="jp-empty-state-text">Try selecting a different category.</p>
+  `
+  container.appendChild(emptyState)
+
+  function toggleEmptyState(show) {
+    emptyState.style.display = show ? "flex" : "none"
+    grid.style.display = show ? "none" : ""
+  }
+
+  // Sort logic
   function sortItems() {
     const sortBy = sortSelect.value
     const dir = sortDirBtn.dataset.dir === "asc" ? 1 : -1
@@ -535,8 +412,324 @@ function transformShop(retryCount = 0) {
 
   shopRight.appendChild(container)
 
-  // Render goal banner if goals exist
-  renderGoalBanner(container, allItems)
+  // Render goals section
+  renderGoalsSection(container)
 
   console.log(`Jackpot+: shop transformed with ${allItems.length} items`)
 }
+
+// Render the goals section
+function renderGoalsSection(container) {
+  const goalsSection = container.querySelector(".jp-goals-section")
+  if (!goalsSection) return
+
+  if (typeof loadGoals !== "function" || typeof getDaysRemaining !== "function") {
+    goalsSection.style.display = "none"
+    return
+  }
+
+  const goals = loadGoals()
+  const goalIds = Object.keys(goals)
+  const totalDays = getDaysRemaining()
+
+  console.log("Jackpot+: renderGoalsSection called", { goalIds, totalDays })
+
+  // Get all shop items for name lookup
+  const shopItems = {}
+  container.querySelectorAll(".jp-shop-item").forEach(el => {
+    const btn = el.querySelector(".jp-shop-goal-btn")
+    if (btn) {
+      const id = btn.dataset.itemId
+      const name = el.querySelector(".jp-shop-item-name")?.textContent || "Unknown"
+      shopItems[id] = { name, price: parseFloat(btn.dataset.price || "0") }
+    }
+  })
+
+  if (goalIds.length === 0 && totalDays <= 0) {
+    goalsSection.style.display = "none"
+    return
+  }
+
+  goalsSection.style.display = ""
+
+  let html = `
+    <div class="jp-goals-header">
+      <h3 class="jp-goals-title">🎯 Goals</h3>
+      <div class="jp-deadline-input">
+        <label for="jp-deadline">Deadline:</label>
+        <input type="date" id="jp-deadline" class="jp-deadline-date" />
+        <span class="jp-days-remaining">${totalDays}d left</span>
+      </div>
+    </div>
+  `
+
+  if (goalIds.length === 0) {
+    html += `
+      <div class="jp-goals-empty">
+        <p>No goals set. Click 🎯 on a shop item to set a goal.</p>
+      </div>
+    `
+  } else {
+    html += `<div class="jp-goals-list">`
+    goalIds.forEach(itemId => {
+      const goal = goals[itemId]
+      const item = shopItems[itemId] || { name: itemId, price: goal.price }
+      const hoursPerDay =
+        typeof getHoursPerDay === "function" ? getHoursPerDay(goal, totalDays) : "?"
+      const chipsPerDay =
+        typeof getChipsPerDay === "function" ? getChipsPerDay(goal, totalDays) : "?"
+
+      // Determine progress percent using current toolbar hours
+      let currentTotalHours = 0
+      try {
+        const raw = localStorage.getItem("jackpot_plus_stats")
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          currentTotalHours = parseFloat(parsed.hours || "0") || 0
+        }
+      } catch (e) {}
+
+      // Calculate progress: how much of the original goal is done
+      // originalPrice is the full price in chips, existingHours was already done when goal was set
+      const originalChips = goal.originalPrice || goal.price + (goal.existingHours || 0) * 50
+      const originalHours = originalChips / 50
+
+      // Progress = current total hours / original hours
+      // existingHours is the hours that were already done when the goal was set
+      // So if existingHours = 11 and currentTotalHours = 12, we've done 1 hour since setting the goal
+      // But the total progress is still currentTotalHours / originalHours
+      const percent =
+        originalHours > 0 ? Math.min(100, Math.round((currentTotalHours / originalHours) * 100)) : 0
+
+      // Smart goal display (include break days when present)
+      let statsText = ""
+      const breakTxt =
+        goal.breakDays && goal.breakDays > 0
+          ? ` • ${goal.breakDays} break day${goal.breakDays > 1 ? "s" : ""}`
+          : ""
+
+      const originalHoursDisplay = (originalChips / 50).toFixed(1)
+      const remainingChips = goal.price || 0
+      const remainingHours = (remainingChips / 50).toFixed(1)
+      // Dollar conversion: $6.00 per hour -> 50 chips = 1 hour => $ per chip
+      const dollarPerChip = 6 / 50
+      const originalDollars = (originalChips * dollarPerChip).toFixed(2)
+      const remainingDollars = (remainingChips * dollarPerChip).toFixed(2)
+      const dollarsPerDay = (chipsPerDay * dollarPerChip).toFixed(2)
+      statsText = `${originalHoursDisplay}h total ($${originalDollars}) • ${currentTotalHours.toFixed(
+        1,
+      )}h done • ${remainingHours}h left ($${remainingDollars}) • ${chipsPerDay}/day ($${dollarsPerDay})${breakTxt}`
+
+      html += `
+        <div class="jp-goal-item" data-item-id="${itemId}">
+          <div class="jp-goal-info">
+            <span class="jp-goal-name">${item.name}</span>
+            <span class="jp-goal-stats">${statsText}</span>
+            <div class="jp-goal-progress-wrap">
+              <div class="jp-goal-progress" style="width: ${percent}%"></div>
+            </div>
+            <div class="jp-goal-progress-text">${percent}%</div>
+          </div>
+          <div class="jp-goal-actions">
+            <button class="jp-goal-edit" data-item-id="${itemId}" aria-label="Edit goal">
+              <svg class="jp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+            </button>
+            <button class="jp-goal-remove" data-item-id="${itemId}" aria-label="Remove goal">✕</button>
+          </div>
+        </div>
+      `
+    })
+    html += `</div>`
+  }
+
+  goalsSection.innerHTML = html
+
+  // Set deadline input value
+  const deadlineInput = goalsSection.querySelector("#jp-deadline")
+  if (deadlineInput) {
+    const deadline = typeof getDeadline === "function" ? getDeadline() : null
+    if (deadline) {
+      deadlineInput.value = deadline.toISOString().split("T")[0]
+    }
+
+    deadlineInput.addEventListener("change", () => {
+      if (typeof saveDeadline !== "function") return
+      const date = new Date(deadlineInput.value + "T00:00:00")
+      if (!isNaN(date.getTime())) {
+        saveDeadline(date)
+        renderGoalsSection(container)
+      }
+    })
+  }
+
+  // Remove goal buttons
+  goalsSection.querySelectorAll(".jp-goal-remove").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (typeof removeGoal !== "function") return
+      const itemId = btn.dataset.itemId
+      removeGoal(itemId)
+
+      // Update goal button in grid
+      const goalBtn = container.querySelector(`.jp-shop-goal-btn[data-item-id="${itemId}"]`)
+      if (goalBtn) {
+        goalBtn.classList.remove("jp-shop-goal-active")
+        goalBtn.title = "Set as goal"
+      }
+
+      renderGoalsSection(container)
+    })
+  })
+
+  // Edit goal buttons (edit price via modal)
+  goalsSection.querySelectorAll(".jp-goal-edit").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (typeof loadGoals !== "function" || typeof saveGoals !== "function") return
+      const itemId = btn.dataset.itemId
+      const goals = loadGoals()
+      const goal = goals[itemId]
+      if (!goal) return
+
+      const itemName =
+        container.querySelector(`.jp-goal-item[data-item-id="${itemId}"] .jp-goal-name`)
+          ?.textContent || itemId
+      const currentChips = goal.price || 0
+      const currentHours = currentChips / 50
+      const currentDollars = currentHours * 6
+
+      // Get original shop item price for reset
+      const goalBtnInGrid = container.querySelector(`.jp-shop-goal-btn[data-item-id="${itemId}"]`)
+      let originalShopChips = currentChips
+      if (goalBtnInGrid) {
+        originalShopChips = parseFloat(
+          goalBtnInGrid.dataset.itemPrice || goalBtnInGrid.dataset.price || currentChips,
+        )
+      }
+      const originalShopHours = originalShopChips / 50
+      const originalShopDollars = originalShopHours * 6
+
+      // Create modal
+      const overlay = document.createElement("div")
+      overlay.className = "jp-modal-overlay"
+      overlay.innerHTML = `
+          <div class="jp-modal">
+            <div class="jp-modal-header">
+              <h3 class="jp-modal-title">Edit: ${itemName}</h3>
+              <button class="jp-modal-close" aria-label="Close">✕</button>
+            </div>
+            <div class="jp-modal-inputs">
+              <div class="jp-modal-input-group">
+                <label class="jp-modal-label">Hours</label>
+                <input type="number" class="jp-modal-input" id="jp-edit-hours" value="${currentHours.toFixed(1)}" step="0.1" min="0" />
+              </div>
+              <div class="jp-modal-input-group">
+                <label class="jp-modal-label">Dollars ($6/h)</label>
+                <input type="number" class="jp-modal-input" id="jp-edit-dollars" value="${currentDollars.toFixed(2)}" step="0.01" min="0" />
+              </div>
+              <div class="jp-modal-input-group">
+                <label class="jp-modal-label">Chips (50/h)</label>
+                <input type="number" class="jp-modal-input" id="jp-edit-chips" value="${currentChips}" step="1" min="0" />
+              </div>
+            </div>
+            <div class="jp-modal-actions">
+              <button class="jp-modal-btn jp-modal-btn-reset" title="Reset to shop price">↺ Reset</button>
+              <button class="jp-modal-btn jp-modal-btn-cancel">Cancel</button>
+              <button class="jp-modal-btn jp-modal-btn-save">Save</button>
+            </div>
+          </div>
+        `
+
+      const hoursInput = overlay.querySelector("#jp-edit-hours")
+      const dollarsInput = overlay.querySelector("#jp-edit-dollars")
+      const chipsInput = overlay.querySelector("#jp-edit-chips")
+      const closeBtn = overlay.querySelector(".jp-modal-close")
+      const cancelBtn = overlay.querySelector(".jp-modal-btn-cancel")
+      const saveBtn = overlay.querySelector(".jp-modal-btn-save")
+      const resetBtn = overlay.querySelector(".jp-modal-btn-reset")
+
+      // Linked inputs - update others when one changes
+      hoursInput.addEventListener("input", () => {
+        const h = parseFloat(hoursInput.value) || 0
+        dollarsInput.value = (h * 6).toFixed(2)
+        chipsInput.value = Math.round(h * 50)
+      })
+
+      dollarsInput.addEventListener("input", () => {
+        const d = parseFloat(dollarsInput.value) || 0
+        hoursInput.value = (d / 6).toFixed(1)
+        chipsInput.value = Math.round((d / 6) * 50)
+      })
+
+      chipsInput.addEventListener("input", () => {
+        const c = parseFloat(chipsInput.value) || 0
+        hoursInput.value = (c / 50).toFixed(1)
+        dollarsInput.value = ((c / 50) * 6).toFixed(2)
+      })
+
+      const closeModal = () => overlay.remove()
+      closeBtn.addEventListener("click", closeModal)
+      cancelBtn.addEventListener("click", closeModal)
+      overlay.addEventListener("click", e => {
+        if (e.target === overlay) closeModal()
+      })
+
+      // Reset to original shop price
+      resetBtn.addEventListener("click", () => {
+        hoursInput.value = originalShopHours.toFixed(1)
+        dollarsInput.value = originalShopDollars.toFixed(2)
+        chipsInput.value = originalShopChips
+      })
+
+      saveBtn.addEventListener("click", () => {
+        const newChips = Math.round(parseFloat(chipsInput.value) || 0)
+        goal.price = newChips
+        goal.originalPrice = newChips
+        goal.existingHours = 0
+        saveGoals(goals)
+
+        const goalBtn = container.querySelector(`.jp-shop-goal-btn[data-item-id="${itemId}"]`)
+        if (goalBtn) goalBtn.dataset.price = newChips
+
+        closeModal()
+        renderGoalsSection(container)
+      })
+
+      document.body.appendChild(overlay)
+      hoursInput.focus()
+      hoursInput.select()
+    })
+  })
+}
+
+// Re-render goals section when toolbar stats change
+window.addEventListener("jp:goals:changed", () => {
+  const container = document.querySelector(".jp-shop-container")
+  if (container) {
+    console.log("Jackpot+: jp:goals:changed event received, re-rendering goals section")
+    renderGoalsSection(container)
+  }
+})
+
+// Re-render goals section when stats change
+window.addEventListener("jp:stats:changed", () => {
+  const container = document.querySelector(".jp-shop-container")
+  if (container) {
+    console.log("Jackpot+: jp:stats:changed event received, re-rendering goals section")
+    renderGoalsSection(container)
+  }
+})
+
+// Also listen for storage changes from other tabs
+window.addEventListener("storage", e => {
+  if (!e.key) return
+  if (
+    e.key === "jackpot_plus_goals" ||
+    e.key === "jackpot_plus_deadline" ||
+    e.key === "jackpot_plus_stats"
+  ) {
+    const container = document.querySelector(".jp-shop-container")
+    if (container) {
+      console.log("Jackpot+: storage change detected, re-rendering goals section")
+      renderGoalsSection(container)
+    }
+  }
+})

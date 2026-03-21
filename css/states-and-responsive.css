@@ -1,0 +1,138 @@
+/* ═══════════════════════════════════════════════
+   Jackpot+ — Empty/Error states, Responsive, Reduced motion
+   ═══════════════════════════════════════════════ */
+
+/* EMPTY STATES */
+.jp-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+}
+
+.jp-empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.jp-empty-state-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--jp-text-primary);
+  margin: 0 0 8px 0;
+}
+
+.jp-empty-state-text {
+  font-size: 14px;
+  color: var(--jp-text-secondary);
+  margin: 0;
+  max-width: 320px;
+}
+
+/* ERROR STATES */
+.jp-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  text-align: center;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--jp-radius-lg);
+  margin: 20px 0;
+}
+
+.jp-error-state-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.jp-error-state-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #991b1b;
+  margin: 0 0 6px 0;
+}
+
+.jp-error-state-text {
+  font-size: 13px;
+  color: #b91c1c;
+  margin: 0;
+}
+
+/* RESPONSIVE */
+@media (max-width: 640px) {
+  .jackpot-simple-list {
+    padding: 24px 16px;
+  }
+
+  .jp-deck-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .jackpot-simple-list h2 {
+    font-size: 24px;
+  }
+
+  .jp-add-project-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .project-list {
+    grid-template-columns: 1fr;
+  }
+
+  .jp-shop-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .jp-shop-header-actions {
+    width: 100%;
+  }
+
+  .jp-shop-action-btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .jp-shop-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* REDUCED MOTION */
+@media (prefers-reduced-motion: reduce) {
+  .jackpot-simple-list,
+  .jackpot-simple-list h2,
+  .jackpot-simple-list .project-item,
+  .jp-shop-item,
+  .shipped-badge {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .jackpot-simple-list .project-card,
+  .jp-shop-item-card,
+  .project-banner,
+  .project-link,
+  .jp-shop-buy-btn,
+  .jp-add-project-btn,
+  .jp-shop-action-btn,
+  .jp-shop-filter-btn,
+  .jp-toolbar-stats,
+  .jp-toolbar-goal-pill {
+    transition: none !important;
+    transform: none !important;
+  }
+}
