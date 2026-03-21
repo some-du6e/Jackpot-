@@ -1,0 +1,214 @@
+/* ═══════════════════════════════════════════════
+   Jackpot+ — Toolbar
+   ═══════════════════════════════════════════════ */
+
+/* Toolbar: plain, low-visual-noise overrides */
+.toolbar {
+  background: var(--jp-bg-primary) !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid var(--jp-border) !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1200 !important;
+}
+.toolbar .toolbar-bg {
+  display: none !important;
+}
+.toolbar .toolbar-content {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 8px 16px !important;
+  display: grid !important;
+  grid-template-columns: 1fr auto !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+/* Prevent layout offsets that can push the nav row down */
+.toolbar .toolbar-content {
+  min-width: 0 !important;
+  position: relative !important;
+  top: 0 !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+.nav-links {
+  display: flex !important;
+  gap: 6px !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  min-width: 0 !important;
+}
+.nav-item {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 6px 10px !important;
+  min-height: 32px !important;
+  min-width: 0 !important;
+  border: 1px solid var(--jp-border) !important;
+  background: var(--jp-bg-primary) !important;
+  color: var(--jp-text-primary) !important;
+  text-decoration: none !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+.nav-item:hover {
+  background: var(--jp-bg-secondary) !important;
+  border-color: var(--jp-border-hover) !important;
+}
+.nav-item.nav-active {
+  background: var(--jp-text-primary) !important;
+  border-color: var(--jp-text-primary) !important;
+  color: #ffffff !important;
+}
+.nav-item:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.18) !important;
+  outline-offset: 2px !important;
+}
+
+.jp-toolbar-stats {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+.jp-toolbar-stats .jp-stat {
+  font-size: 13px;
+  color: var(--jp-text-primary);
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+.jp-stat-icon {
+  opacity: 0.9;
+  font-size: 14px;
+}
+
+/* Avatar sizing */
+.avatar-chip {
+  width: 24px;
+  height: 24px;
+}
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+@media (max-width: 520px) {
+  .nav-links {
+    display: none !important;
+  }
+  .toolbar {
+    height: 56px !important;
+  }
+}
+
+/* Fix overlapping */
+.toolbar .toolbar-content {
+  gap: 12px !important;
+}
+.toolbar .nav-links {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+.toolbar-right {
+  display: flex !important;
+  gap: 12px !important;
+  align-items: center !important;
+  flex: 0 0 auto !important;
+}
+.nav-item {
+  flex: 0 1 auto !important;
+  max-width: 160px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* hide scrollbar on WebKit but allow scroll */
+.nav-links::-webkit-scrollbar {
+  height: 6px;
+  display: none;
+}
+.nav-links {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* Toolbar enhancement */
+.jp-toolbar-stats {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.jp-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: var(--jp-bg-secondary);
+  border: 1.5px solid var(--jp-border);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--jp-text-primary);
+  font-variant-numeric: tabular-nums;
+  transition: all 200ms var(--jp-ease-out-quart);
+}
+
+.jp-stat-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.jp-stat-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--jp-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.jp-stat-updated {
+  animation: jpStatFlash 0.8s ease-out;
+}
+
+@keyframes jpStatFlash {
+  0%,
+  100% {
+    border-color: var(--jp-border);
+  }
+  50% {
+    border-color: #6366f1;
+    background: rgba(99, 102, 241, 0.06);
+  }
+}
+
+/* Goal pill inherits from .jp-stat, only override what's different */
+.jp-toolbar-goal-pill {
+  text-decoration: none;
+}
+
+.jp-toolbar-goal-pill:hover {
+  transform: translateY(-1px);
+}
+
+.jp-toolbar-goal-pill:active {
+  transform: translateY(0);
+}
+
+/* Hide original token count when enhanced */
+.token-count {
+  display: none !important;
+}

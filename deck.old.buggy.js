@@ -1,14 +1,83 @@
+// Jackpot+ — Deck transformation (card grid → simple list)
 console.log("Jackpot+: deck module loaded.")
 
-function transformDeck() {
+function transformDeck(retryCount = 0) {
   const deckTable = document.querySelector(".deck-table")
+
   if (!deckTable) {
-    console.error("Jackpot+: deck table not found")
+    if (retryCount < 6) {
+      console.log(`Jackpot+: deck table not found, retrying (${retryCount + 1}/6)...`)
+      setTimeout(() => transformDeck(retryCount + 1), 300)
+    } else {
+      // Fallback: observe .deck-page for .deck-table being added
+      const deckPage = document.querySelector(".deck-page")
+      if (deckPage && !deckPage.__jpWaitingForDeckTable) {
+        deckPage.__jpWaitingForDeckTable = true
+        console.log("Jackpot+: .deck-table missing, observing .deck-page for deck table...")
+        const mo = new MutationObserver((mutations, obs) => {
+          if (deckPage.querySelector(".deck-table")) {
+            obs.disconnect()
+            deckPage.__jpWaitingForDeckTable = false
+            setTimeout(() => transformDeck(), 50)
+          }
+        })
+        mo.observe(deckPage, { childList: true, subtree: true })
+        // Safety: stop after 10s
+        setTimeout(() => {
+          if (deckPage.__jpWaitingForDeckTable) {
+            try {
+              mo.disconnect()
+            } catch (e) {}
+            deckPage.__jpWaitingForDeckTable = false
+            console.log("Jackpot+: timed out waiting for .deck-table (10s)")
+          }
+        }, 10000)
+      } else {
+        console.log("Jackpot+: deck table not found after retries, waiting for DOM changes")
+      }
+    }
     return
   }
 
   const cardsTrack = deckTable.querySelector("#cardsTrack")
   const cards = cardsTrack ? Array.from(cardsTrack.querySelectorAll(".card-slot-filled")) : []
+
+  // If we don't yet have cardsTrack or any filled cards, observe the deckTable
+  // for incoming nodes instead of aggressive polling. This is more reliable
+  // when the page loads parts of the deck asynchronously.
+  if (!cardsTrack || cards.length === 0) {
+    if (!deckTable.__jpWaitingForCards) {
+      deckTable.__jpWaitingForCards = true
+      console.log("Jackpot+: waiting for cards to appear in deckTable (observer)")
+
+      const mo = new MutationObserver((mutations, obs) => {
+        const ct = deckTable.querySelector("#cardsTrack")
+        const filled = ct ? ct.querySelectorAll(".card-slot-filled") : []
+        if (ct && filled.length > 0) {
+          obs.disconnect()
+          deckTable.__jpWaitingForCards = false
+          // slight delay to let any rendering settle, then try again
+          setTimeout(() => transformDeck(), 80)
+        }
+      })
+
+      mo.observe(deckTable, { childList: true, subtree: true })
+
+      // Safety timeout: give up observing after 5s and log state
+      setTimeout(() => {
+        if (deckTable.__jpWaitingForCards) {
+          try {
+            mo.disconnect()
+          } catch (e) {}
+          deckTable.__jpWaitingForCards = false
+          console.log(
+            "Jackpot+: timed out waiting for deck cards (5s), will not retry until next navigation",
+          )
+        }
+      }, 5000)
+    }
+    return
+  }
 
   const listContainer = document.createElement("div")
   listContainer.className = "jackpot-simple-list"
@@ -28,7 +97,6 @@ function transformDeck() {
 
   const addBtn = document.createElement("button")
   addBtn.className = "jp-add-project-btn"
-  addBtn.setAttribute("aria-label", "Add a new project")
   addBtn.innerHTML = `
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M8 3V13M3 8H13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -59,8 +127,6 @@ function transformDeck() {
 
   const list = document.createElement("ul")
   list.className = "project-list"
-  list.setAttribute("role", "list")
-  list.setAttribute("aria-label", "Your projects")
 
   cards.forEach((card, index) => {
     const projectName = card.dataset.projectName || "Unnamed"
@@ -110,40 +176,9 @@ function transformDeck() {
     `
     listItem.innerHTML = html
     list.appendChild(listItem)
-
-    // Add click handler to open detail modal
-    const projectCard = listItem.querySelector(".project-card")
-    if (projectCard) {
-      projectCard.style.cursor = "pointer"
-      projectCard.addEventListener("click", e => {
-        // Don't open modal if clicking a link
-        if (e.target.closest(".project-link")) return
-
-        // Try to click the original card to trigger the site's modal
-        if (card) {
-          card.click()
-        }
-      })
-    }
   })
 
-  // Show empty state if no projects
-  if (cards.length === 0) {
-    const emptyState = document.createElement("div")
-    emptyState.className = "jp-empty-state"
-    emptyState.innerHTML = `
-      <div class="jp-empty-state-icon">📋</div>
-      <div class="jp-empty-state-title">No projects yet</div>
-      <p class="jp-empty-state-text">Click "Add Project" to start tracking your work and earning chips.</p>
-    `
-    listContainer.appendChild(emptyState)
-  } else {
-    listContainer.appendChild(list)
-  }
-
-  // Hide the original deck table and insert our list after it
-  deckTable.style.display = "none"
-  deckTable.parentNode.insertBefore(listContainer, deckTable.nextSibling)
+  listContainer.appendChild(list)
 
   // Hide any original Add Project buttons that might be visible
   const addProjectBtns = document.querySelectorAll(
@@ -152,6 +187,8 @@ function transformDeck() {
   addProjectBtns.forEach(btn => {
     btn.style.display = "none"
   })
+
+  deckTable.parentNode.replaceChild(listContainer, deckTable)
 
   // Save stats so toolbar shows correct values on other pages
   const tokenCountEl = document.querySelector(".token-count")
