@@ -48,9 +48,7 @@ function setExtensionEnabled(isEnabled) {
       .query({ url: "https://jackpot.hackclub.com/*" })
       .then(tabs => {
         tabs.forEach(tab => {
-          chrome.tabs
-            .sendMessage(tab.id, { type: "THEME_REFRESH" })
-            .catch(() => {})
+          chrome.tabs.sendMessage(tab.id, { type: "THEME_REFRESH" }).catch(() => {})
         })
       })
       .catch(() => {})
