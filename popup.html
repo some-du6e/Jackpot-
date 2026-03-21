@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Jackpot+</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Sour+Gummy:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
@@ -12,20 +15,18 @@
         <span class="popup-title-icon">🎰</span>
         <span>Jackpot+</span>
       </div>
-      <span class="popup-version">v1.0</span>
+      <button id="toggle-extension" class="toggle-btn toggle-btn-header" type="button" aria-pressed="true">
+        <span class="toggle-knob"></span>
+        <span class="toggle-label" id="toggle-extension-label">On</span>
+      </button>
     </div>
 
     <div class="popup-body">
       <div class="settings-section">
-        <div class="settings-label">Status</div>
-        <div class="status-indicator">
-          <span class="status-dot"></span>
-          <span class="status-text">Active</span>
-        </div>
-      </div>
-
-      <div class="settings-section">
         <div class="settings-label">Hackatime API Key</div>
+        <div class="settings-help">
+          Used to authenticate calls to the Hackatime API so Jackpot+ can fetch the data it needs.
+        </div>
         <div class="api-key-input">
           <span class="api-key-icon">🔑</span>
           <input
@@ -33,6 +34,9 @@
             id="hackatime-api-key"
             placeholder="Hackatime API key"
             autocomplete="off" />
+          <button id="toggle-api-key-visibility" class="toggle-visibility-btn" type="button" aria-label="Show API key">
+            👁
+          </button>
           <button id="save-api-key" class="save-api-key-btn" aria-label="Save API key">✓</button>
         </div>
         <div class="api-key-status" id="api-key-status"></div>
@@ -71,15 +75,28 @@
             </div>
             <div class="theme-preview theme-preview-hacker"></div>
           </div>
+
+          <div
+            class="theme-option"
+            data-theme="flavortown"
+            role="radio"
+            aria-checked="false"
+            tabindex="0">
+            <div class="theme-radio">
+              <div class="theme-radio-inner"></div>
+            </div>
+            <div class="theme-info">
+              <div class="theme-name">FlavorTown</div>
+              <div class="theme-desc">Warm beige, maroon heat</div>
+            </div>
+            <div class="theme-preview theme-preview-flavortown"></div>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="popup-footer">
-      <a href="https://jackpot.hackclub.com" target="_blank" class="popup-link">
-        jackpot.hackclub.com
-      </a>
-      <span class="popup-credits">by Hack Club</span>
+      <span class="popup-credits">Jackpot+</span>
     </div>
 
     <script src="popup.js"></script>

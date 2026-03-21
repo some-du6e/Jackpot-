@@ -580,33 +580,37 @@ function renderGoalsSection(container) {
     })
   })
 
-    // Edit goal buttons (edit price via modal)
-    goalsSection.querySelectorAll(".jp-goal-edit").forEach(btn => {
-      btn.addEventListener("click", () => {
-        if (typeof loadGoals !== "function" || typeof saveGoals !== "function") return
-        const itemId = btn.dataset.itemId
-        const goals = loadGoals()
-        const goal = goals[itemId]
-        if (!goal) return
+  // Edit goal buttons (edit price via modal)
+  goalsSection.querySelectorAll(".jp-goal-edit").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (typeof loadGoals !== "function" || typeof saveGoals !== "function") return
+      const itemId = btn.dataset.itemId
+      const goals = loadGoals()
+      const goal = goals[itemId]
+      if (!goal) return
 
-        const itemName = container.querySelector(`.jp-goal-item[data-item-id="${itemId}"] .jp-goal-name`)?.textContent || itemId
-        const currentChips = goal.price || 0
-        const currentHours = currentChips / 50
-        const currentDollars = currentHours * 6
+      const itemName =
+        container.querySelector(`.jp-goal-item[data-item-id="${itemId}"] .jp-goal-name`)
+          ?.textContent || itemId
+      const currentChips = goal.price || 0
+      const currentHours = currentChips / 50
+      const currentDollars = currentHours * 6
 
-        // Get original shop item price for reset
-        const goalBtnInGrid = container.querySelector(`.jp-shop-goal-btn[data-item-id="${itemId}"]`)
-        let originalShopChips = currentChips
-        if (goalBtnInGrid) {
-          originalShopChips = parseFloat(goalBtnInGrid.dataset.itemPrice || goalBtnInGrid.dataset.price || currentChips)
-        }
-        const originalShopHours = originalShopChips / 50
-        const originalShopDollars = originalShopHours * 6
+      // Get original shop item price for reset
+      const goalBtnInGrid = container.querySelector(`.jp-shop-goal-btn[data-item-id="${itemId}"]`)
+      let originalShopChips = currentChips
+      if (goalBtnInGrid) {
+        originalShopChips = parseFloat(
+          goalBtnInGrid.dataset.itemPrice || goalBtnInGrid.dataset.price || currentChips,
+        )
+      }
+      const originalShopHours = originalShopChips / 50
+      const originalShopDollars = originalShopHours * 6
 
-        // Create modal
-        const overlay = document.createElement("div")
-        overlay.className = "jp-modal-overlay"
-        overlay.innerHTML = `
+      // Create modal
+      const overlay = document.createElement("div")
+      overlay.className = "jp-modal-overlay"
+      overlay.innerHTML = `
           <div class="jp-modal">
             <div class="jp-modal-header">
               <h3 class="jp-modal-title">Edit: ${itemName}</h3>
@@ -634,64 +638,66 @@ function renderGoalsSection(container) {
           </div>
         `
 
-        const hoursInput = overlay.querySelector("#jp-edit-hours")
-        const dollarsInput = overlay.querySelector("#jp-edit-dollars")
-        const chipsInput = overlay.querySelector("#jp-edit-chips")
-        const closeBtn = overlay.querySelector(".jp-modal-close")
-        const cancelBtn = overlay.querySelector(".jp-modal-btn-cancel")
-        const saveBtn = overlay.querySelector(".jp-modal-btn-save")
-        const resetBtn = overlay.querySelector(".jp-modal-btn-reset")
+      const hoursInput = overlay.querySelector("#jp-edit-hours")
+      const dollarsInput = overlay.querySelector("#jp-edit-dollars")
+      const chipsInput = overlay.querySelector("#jp-edit-chips")
+      const closeBtn = overlay.querySelector(".jp-modal-close")
+      const cancelBtn = overlay.querySelector(".jp-modal-btn-cancel")
+      const saveBtn = overlay.querySelector(".jp-modal-btn-save")
+      const resetBtn = overlay.querySelector(".jp-modal-btn-reset")
 
-        // Linked inputs - update others when one changes
-        hoursInput.addEventListener("input", () => {
-          const h = parseFloat(hoursInput.value) || 0
-          dollarsInput.value = (h * 6).toFixed(2)
-          chipsInput.value = Math.round(h * 50)
-        })
-
-        dollarsInput.addEventListener("input", () => {
-          const d = parseFloat(dollarsInput.value) || 0
-          hoursInput.value = (d / 6).toFixed(1)
-          chipsInput.value = Math.round((d / 6) * 50)
-        })
-
-        chipsInput.addEventListener("input", () => {
-          const c = parseFloat(chipsInput.value) || 0
-          hoursInput.value = (c / 50).toFixed(1)
-          dollarsInput.value = ((c / 50) * 6).toFixed(2)
-        })
-
-        const closeModal = () => overlay.remove()
-        closeBtn.addEventListener("click", closeModal)
-        cancelBtn.addEventListener("click", closeModal)
-        overlay.addEventListener("click", e => { if (e.target === overlay) closeModal() })
-
-        // Reset to original shop price
-        resetBtn.addEventListener("click", () => {
-          hoursInput.value = originalShopHours.toFixed(1)
-          dollarsInput.value = originalShopDollars.toFixed(2)
-          chipsInput.value = originalShopChips
-        })
-
-        saveBtn.addEventListener("click", () => {
-          const newChips = Math.round(parseFloat(chipsInput.value) || 0)
-          goal.price = newChips
-          goal.originalPrice = newChips
-          goal.existingHours = 0
-          saveGoals(goals)
-
-          const goalBtn = container.querySelector(`.jp-shop-goal-btn[data-item-id="${itemId}"]`)
-          if (goalBtn) goalBtn.dataset.price = newChips
-
-          closeModal()
-          renderGoalsSection(container)
-        })
-
-        document.body.appendChild(overlay)
-        hoursInput.focus()
-        hoursInput.select()
+      // Linked inputs - update others when one changes
+      hoursInput.addEventListener("input", () => {
+        const h = parseFloat(hoursInput.value) || 0
+        dollarsInput.value = (h * 6).toFixed(2)
+        chipsInput.value = Math.round(h * 50)
       })
+
+      dollarsInput.addEventListener("input", () => {
+        const d = parseFloat(dollarsInput.value) || 0
+        hoursInput.value = (d / 6).toFixed(1)
+        chipsInput.value = Math.round((d / 6) * 50)
+      })
+
+      chipsInput.addEventListener("input", () => {
+        const c = parseFloat(chipsInput.value) || 0
+        hoursInput.value = (c / 50).toFixed(1)
+        dollarsInput.value = ((c / 50) * 6).toFixed(2)
+      })
+
+      const closeModal = () => overlay.remove()
+      closeBtn.addEventListener("click", closeModal)
+      cancelBtn.addEventListener("click", closeModal)
+      overlay.addEventListener("click", e => {
+        if (e.target === overlay) closeModal()
+      })
+
+      // Reset to original shop price
+      resetBtn.addEventListener("click", () => {
+        hoursInput.value = originalShopHours.toFixed(1)
+        dollarsInput.value = originalShopDollars.toFixed(2)
+        chipsInput.value = originalShopChips
+      })
+
+      saveBtn.addEventListener("click", () => {
+        const newChips = Math.round(parseFloat(chipsInput.value) || 0)
+        goal.price = newChips
+        goal.originalPrice = newChips
+        goal.existingHours = 0
+        saveGoals(goals)
+
+        const goalBtn = container.querySelector(`.jp-shop-goal-btn[data-item-id="${itemId}"]`)
+        if (goalBtn) goalBtn.dataset.price = newChips
+
+        closeModal()
+        renderGoalsSection(container)
+      })
+
+      document.body.appendChild(overlay)
+      hoursInput.focus()
+      hoursInput.select()
     })
+  })
 }
 
 // Re-render goals section when toolbar stats change

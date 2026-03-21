@@ -33,6 +33,13 @@ body {
   color: var(--jp-text-primary);
 }
 
+.settings-help {
+  font-size: 12px;
+  color: var(--jp-text-secondary);
+  line-height: 1.35;
+  margin: -6px 0 10px;
+}
+
 .popup-header {
   display: flex;
   align-items: center;
@@ -41,10 +48,41 @@ body {
   border-bottom: 1px solid var(--jp-border);
 }
 
+html[data-jp-theme="flavortown"] .api-key-input input::placeholder {
+  color: var(--jp-text-muted);
+}
+
+html[data-jp-theme="flavortown"] .popup-footer,
+html[data-jp-theme="flavortown"] .popup-credits {
+  color: var(--jp-text-muted);
+}
+
+html[data-jp-theme="flavortown"] .api-key-input input::placeholder {
+  color: var(--jp-text-muted);
+}
+
+html[data-jp-theme="flavortown"] .settings-help {
+  color: var(--jp-text-muted);
+}
+
+html[data-jp-theme="flavortown"] .theme-desc {
+  color: var(--jp-text-muted);
+}
+
+html[data-jp-theme="flavortown"] .theme-preview-plain {
+  background: linear-gradient(135deg, var(--jp-bg-secondary) 50%, var(--jp-bg-primary) 50%);
+}
+
+html[data-jp-theme="flavortown"] .theme-radio,
+html[data-jp-theme="flavortown"] .theme-radio-inner {
+  /* ensure selected indicator isn’t fading into similar beige */
+  border-color: var(--jp-border);
+}
+
 .popup-title {
   font-size: 16px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--jp-text-primary);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -56,7 +94,7 @@ body {
 
 .popup-version {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--jp-text-muted);
   font-weight: 500;
 }
 
@@ -68,27 +106,119 @@ body {
   margin-bottom: 20px;
 }
 
-.status-indicator {
+.toggle-row {
+  padding: 10px 0;
+}
+
+.toggle-btn {
+  width: 100%;
+  height: 38px;
+  border: 1.5px solid var(--jp-border);
+  border-radius: 12px;
+  background: var(--jp-bg-secondary);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s ease;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  background: var(--jp-bg-secondary);
+  justify-content: center;
+  gap: 10px;
+}
+
+.toggle-btn-header {
+  width: auto;
+  height: 28px;
+  padding: 0 10px;
   border-radius: 10px;
-  border: 1px solid var(--jp-border);
 }
 
-.status-dot {
-  width: 8px;
-  height: 8px;
+.toggle-btn-header .toggle-label {
+  font-size: 12px;
+}
+
+.toggle-knob {
+  width: 34px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.toggle-knob::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+  background: var(--jp-accent);
+  transform: translateY(-50%);
+  transition: transform 0.15s ease;
 }
 
-.status-text {
+.toggle-btn.off {
+  background: rgba(100, 116, 139, 0.08);
+}
+
+.toggle-btn.off .toggle-knob {
+  background: rgba(100, 116, 139, 0.1);
+  border-color: rgba(100, 116, 139, 0.35);
+}
+
+.toggle-btn.off .toggle-knob::after {
+  transform: translate(14px, -50%);
+  background: #94a3b8;
+}
+
+html[data-jp-theme="hacker"] .toggle-btn.off .toggle-knob::after {
+  background: var(--jp-text-secondary);
+}
+
+html[data-jp-theme="hacker"] .toggle-visibility-btn {
+  background: rgba(0, 204, 51, 0.08);
+  color: var(--jp-text-primary);
+}
+
+/* FlavorTown theme overrides */
+html[data-jp-theme="flavortown"] {
+  --jp-bg-primary: #e7d4b1;
+  --jp-bg-secondary: #f2e3c7;
+  --jp-text-primary: #4e2c26;
+  --jp-text-secondary: #e7caa8;
+  --jp-border: #be4b53;
+  --jp-border-hover: #a3383f;
+  --jp-accent: #a3383f;
+  --jp-font-ui: "Sour Gummy", "Sour Gummy Bold", "Jua", cursive;
+}
+
+html[data-jp-theme="flavortown"] .toggle-btn.off .toggle-knob::after {
+  background: var(--jp-text-secondary);
+}
+
+html[data-jp-theme="flavortown"] .toggle-visibility-btn {
+  background: rgba(163, 56, 63, 0.14);
+  color: var(--jp-text-primary);
+}
+
+/* Fix remaining hardcoded light colors in FlavorTown */
+html[data-jp-theme="flavortown"] .theme-preview {
+  border-color: var(--jp-border);
+}
+
+html[data-jp-theme="flavortown"] .popup-footer {
+  border-top-color: var(--jp-border);
+}
+
+html[data-jp-theme="flavortown"] .theme-preview {
+  border-color: var(--jp-border);
+}
+
+.toggle-label {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--jp-text-primary);
 }
 
@@ -99,10 +229,14 @@ body {
 .settings-label {
   font-size: 12px;
   font-weight: 600;
-  color: #64748b;
+  color: var(--jp-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 10px;
+}
+
+html[data-jp-theme="flavortown"] .settings-label {
+  color: var(--jp-text-primary);
 }
 
 .api-key-input {
@@ -132,6 +266,26 @@ body {
   min-width: 0;
 }
 
+.toggle-visibility-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(100, 116, 139, 0.12);
+  color: var(--jp-text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+}
+
+.toggle-visibility-btn:hover {
+  opacity: 0.85;
+}
+
 .api-key-input input:focus {
   outline: none;
 }
@@ -158,6 +312,22 @@ body {
 
 .save-api-key-btn:hover {
   opacity: 0.85;
+}
+
+.theme-preview-flavortown {
+  background: linear-gradient(135deg, #e7d4b1 50%, #a3383f 50%);
+  position: relative;
+}
+
+.theme-preview-flavortown::after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: #f8e9d3;
+  border-radius: 1px;
 }
 
 .api-key-status {
@@ -244,7 +414,7 @@ body {
   width: 40px;
   height: 28px;
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--jp-border);
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -271,7 +441,7 @@ body {
 
 .popup-footer {
   padding: 14px 20px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--jp-border);
   display: flex;
   align-items: center;
   justify-content: space-between;

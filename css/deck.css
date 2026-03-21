@@ -1,0 +1,337 @@
+/* ═══════════════════════════════════════════════
+   Jackpot+ — Deck Page
+   ═══════════════════════════════════════════════ */
+
+/* DECK PAGE */
+
+/* Base page styling */
+.deck-body {
+  background: none !important;
+  background-image: none !important;
+  background-color: var(--jp-bg-secondary) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+.deck-page {
+  background: none !important;
+  background-image: none !important;
+  background-color: var(--jp-bg-secondary) !important;
+  position: relative !important;
+  inset: auto !important;
+  overflow: visible !important;
+  padding-top: 16px;
+  min-height: 100vh;
+  height: 100%;
+}
+
+.deck-page::before {
+  display: none !important;
+  content: none !important;
+  background-image: none !important;
+}
+
+/* Main container */
+.jackpot-simple-list {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 10px 24px 40px;
+  font-family: var(--jp-font);
+  box-sizing: border-box;
+  animation: jpFadeLiftIn 280ms var(--jp-ease-out-expo) both;
+}
+
+.deck-page > .jackpot-simple-list {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* Deck header */
+.jp-deck-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  animation: jpTitleIn 260ms var(--jp-ease-out-quint) both;
+}
+
+.jackpot-simple-list h2 {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--jp-text-primary);
+  letter-spacing: -0.5px;
+}
+
+/* Add Project button */
+.jp-add-project-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  min-height: 40px;
+  border: none;
+  border-radius: var(--jp-radius-md);
+  background: var(--jp-text-primary);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 200ms var(--jp-ease-out-quart);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+  font-family: var(--jp-font);
+}
+
+.jp-add-project-btn:hover {
+  background: #1e293b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.3);
+}
+
+.jp-add-project-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.2);
+}
+
+.jp-add-project-btn:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+.jp-add-project-btn svg {
+  flex-shrink: 0;
+}
+
+/* Project list grid */
+.jackpot-simple-list .project-list {
+  list-style: none;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)) !important;
+  gap: 20px !important;
+  max-height: none !important;
+  overflow: visible !important;
+  background: transparent !important;
+}
+
+/* Individual project item */
+.jackpot-simple-list .project-item {
+  padding: 0 !important;
+  border: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+  background: transparent !important;
+  display: block !important;
+  width: auto !important;
+  justify-content: unset !important;
+  align-items: unset !important;
+  opacity: 0;
+  transform: translateY(16px);
+  animation: jpFadeLiftIn 280ms var(--jp-ease-out-quint) forwards;
+  animation-delay: calc(60ms + (var(--item-index, 0) * 40ms));
+}
+
+/* Project card */
+.jackpot-simple-list .project-card {
+  background: var(--jp-bg-primary);
+  border-radius: var(--jp-radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: var(--jp-shadow-sm);
+  transition:
+    transform 260ms var(--jp-ease-out-quart),
+    box-shadow 260ms var(--jp-ease-out-quart),
+    border-color 220ms var(--jp-ease-out-quart);
+  border: 1px solid var(--jp-border);
+  transform-origin: center 70%;
+}
+
+.jackpot-simple-list .project-card:hover {
+  transform: translateY(-5px) scale(1.01);
+  box-shadow: var(--jp-shadow-lg);
+  border-color: var(--jp-border-hover);
+}
+
+.jackpot-simple-list .project-card:active {
+  transform: translateY(-1px) scale(0.996);
+}
+
+.jackpot-simple-list .project-shipped {
+  border-color: #86efac;
+  background: linear-gradient(135deg, var(--jp-bg-primary) 0%, #f0fdf4 100%);
+}
+
+/* Banner area */
+.project-banner {
+  height: 120px;
+  background-size: cover;
+  background-position: center;
+  background-color: #f1f5f9;
+  transition: transform 420ms var(--jp-ease-out-quint);
+}
+
+.jackpot-simple-list .project-card:hover .project-banner {
+  transform: scale(1.035);
+}
+
+.project-banner-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  background: linear-gradient(135deg, var(--jp-border) 0%, #f1f5f9 100%);
+}
+
+/* Card content */
+.project-content {
+  padding: 16px;
+}
+
+.project-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+/* Type badges */
+.project-type-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--jp-radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.project-type-software {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.project-type-art {
+  background: #fce7f3;
+  color: #be185d;
+}
+
+.project-type-hardware {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.project-type-game {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+/* Shipped badge */
+.shipped-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--jp-radius-full);
+  background: #dcfce7;
+  color: #15803d;
+  animation: jpBadgeGlow 2.8s var(--jp-ease-out-quart) infinite;
+}
+
+/* Project name & description */
+.project-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--jp-text-primary);
+  margin: 0 0 6px 0;
+  line-height: 1.3;
+}
+
+.project-description {
+  font-size: 13px;
+  color: var(--jp-text-secondary);
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Footer */
+.project-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.project-hours-display {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.hours-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--jp-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.hours-label {
+  font-size: 12px;
+  color: var(--jp-text-muted);
+  font-weight: 500;
+}
+
+/* Project links */
+.project-links {
+  display: flex;
+  gap: 8px;
+}
+
+.project-link {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 14px;
+  min-height: 32px;
+  border-radius: var(--jp-radius-sm);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition:
+    transform 180ms var(--jp-ease-out-quart),
+    background-color 180ms var(--jp-ease-out-quart),
+    color 180ms var(--jp-ease-out-quart),
+    box-shadow 180ms var(--jp-ease-out-quart);
+  transform: translateY(0);
+}
+
+.project-link-play {
+  background: var(--jp-text-primary);
+  color: #ffffff;
+}
+
+.project-link-play:hover {
+  background: #1e293b;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.25);
+}
+
+.project-link-code {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.project-link-code:hover {
+  background: var(--jp-border);
+  color: var(--jp-text-primary);
+  transform: translateY(-2px);
+}
+
+.project-link:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}

@@ -17,7 +17,13 @@
         "components/shop.js",
         "components/toolbar.js"
       ],
-      "css": ["styles.css"],
+      "css": [
+        "css/base.css",
+        "css/toolbar.css",
+        "css/deck.css",
+        "css/shop.css",
+        "css/states-and-responsive.css"
+      ],
       "run_at": "document_start"
     }
   ],
